@@ -53,8 +53,10 @@ const SUPABASE_URL = "https://fynjxnnxaremjazohhck.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_tOb1ZKZ0sg4ozI3I80nVkQ_NGAIMZcr";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const FIXED_CATEGORIES = [
+const SUGGESTED_CATEGORIES = [
   { id: "Affitto", label: "Affitto", icon: Home },
+  { id: "Mutuo", label: "Mutuo", icon: Landmark },
+  { id: "Casa", label: "Casa", icon: Wrench },
   { id: "Supermercato", label: "Supermercato", icon: ShoppingCart },
   { id: "Ristoranti", label: "Ristoranti", icon: UtensilsCrossed },
   { id: "Regali", label: "Regali", icon: Gift },
@@ -63,6 +65,7 @@ const FIXED_CATEGORIES = [
   { id: "Spostamenti", label: "Spostamenti", icon: Car },
   { id: "Imprevisti", label: "Imprevisti", icon: AlertTriangle },
 ];
+const SUGGESTED_MAP = SUGGESTED_CATEGORIES.reduce((m, c) => ((m[c.label] = c), m), {});
 const ALTRO_CATEGORY = { id: "Altro", label: "Altro", icon: CircleEllipsis };
 
 const ICON_CHOICES = [
@@ -176,32 +179,67 @@ function MainApp({ session }) {
   const userId = session.user.id;
   const [splashVisible, setSplashVisible] = useState(true);
   const [expenses, setExpenses] = useState([]);
-  const [customCategories, setCustomCategories] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState("idle");
   const [lastErrorMsg, setLastErrorMsg] = useState("");
   const [cursor, setCursor] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
-  const [form, setForm] = useState({ category: "Supermercato", amount: "", date: todayISO(), note: "" });
+  const [form, setForm] = useState({ category: "Altro", amount: "", date: todayISO(), note: "" });
   const [error, setError] = useState("");
   const [view, setView] = useState("home");
   const [showFilters, setShowFilters] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [addingCustom, setAddingCustom] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatIcon, setNewCatIcon] = useState("Tag");
   const [catError, setCatError] = useState("");
-  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [removalTarget, setRemovalTarget] = useState(null);
+  const [removalStage, setRemovalStage] = useState("choose");
   const [filters, setFilters] = useState({ dateFrom: "", dateTo: "", category: "Tutte", amountMode: "any", amountMin: "", amountMax: "" });
 
-  const CATEGORIES = useMemo(() => [...FIXED_CATEGORIES, ...customCategories.map((c) => ({ id: c.label, label: c.label, icon: ICON_MAP[c.icon_key] || Tag })), ALTRO_CATEGORY], [customCategories]);
+  const CATEGORIES = useMemo(() => [...categories.map((c) => ({ id: c.label, label: c.label, icon: ICON_MAP[c.icon_key] || (SUGGESTED_MAP[c.label] && SUGGESTED_MAP[c.label].icon) || Tag, archived: c.archived })), ALTRO_CATEGORY], [categories]);
+  const activeCategories = useMemo(() => CATEGORIES.filter((c) => !c.archived), [CATEGORIES]);
+
+  useEffect(() => {
+    if (categoriesLoaded && !activeCategories.some((c) => c.id === form.category)) {
+      setForm((f) => ({ ...f, category: (activeCategories.find((c) => c.id !== "Altro") || activeCategories[0] || ALTRO_CATEGORY).id }));
+    }
+  }, [categoriesLoaded, activeCategories]);
 
   useEffect(() => { const t = setTimeout(() => setSplashVisible(false), 2000); return () => clearTimeout(t); }, []);
 
   useEffect(() => {
     (async () => {
       const { data: exp, error: expErr } = await supabase.from("expenses").select("*").order("date", { ascending: false });
-      if (!expErr && exp) setExpenses(exp.map((e) => ({ id: e.id, category: e.category, amount: Number(e.amount), date: e.date, note: e.note || "" })));
-      const { data: cats, error: catErr } = await supabase.from("custom_categories").select("*");
-      if (!catErr && cats) setCustomCategories(cats);
+      const expList = (!expErr && exp) ? exp.map((e) => ({ id: e.id, category: e.category, amount: Number(e.amount), date: e.date, note: e.note || "" })) : [];
+      setExpenses(expList);
+
+      let { data: cats, error: catErr } = await supabase.from("categories").select("*").order("created_at", { ascending: true });
+      if (catErr) cats = [];
+
+      if (cats && cats.length === 0) {
+        const { data: oldCustom } = await supabase.from("custom_categories").select("*");
+        const toInsert = [];
+        const seen = new Set();
+        [...new Set(expList.map((e) => e.category))].forEach((label) => {
+          if (seen.has(label) || label === "Altro") return;
+          seen.add(label);
+          const oc = (oldCustom || []).find((o) => o.label === label);
+          toInsert.push({ user_id: userId, label, icon_key: oc ? oc.icon_key : null });
+        });
+        (oldCustom || []).forEach((o) => {
+          if (seen.has(o.label)) return;
+          seen.add(o.label);
+          toInsert.push({ user_id: userId, label: o.label, icon_key: o.icon_key });
+        });
+        if (toInsert.length > 0) {
+          const { data: inserted, error: migErr } = await supabase.from("categories").insert(toInsert).select();
+          if (!migErr && inserted) cats = inserted;
+        }
+      }
+      setCategories(cats || []);
+      setCategoriesLoaded(true);
       setLoaded(true);
     })();
   }, []);
@@ -268,24 +306,55 @@ function MainApp({ session }) {
     if (delErr) { setExpenses(prev); setSaveState("error"); setLastErrorMsg(delErr.message); }
   };
 
-  const addCategory = async () => {
-    const label = newCatName.trim();
-    if (!label) { setCatError("Inserisci un nome."); return; }
-    const exists = CATEGORIES.some((c) => c.id.toLowerCase() === label.toLowerCase());
-    if (exists) { setCatError("Questa voce esiste già."); return; }
-    const { data, error: insErr } = await supabase.from("custom_categories").insert({ user_id: userId, label, icon_key: newCatIcon }).select().single();
-    if (insErr) { setCatError(insErr.message); return; }
-    setCustomCategories((prev) => [...prev, data]);
-    setNewCatName(""); setNewCatIcon("Tag"); setCatError("");
-    setView("home");
+  const activateSuggested = async (sugg) => {
+    const existing = categories.find((c) => c.label === sugg.label);
+    if (existing) {
+      const { error: updErr } = await supabase.from("categories").update({ archived: false }).eq("id", existing.id);
+      if (!updErr) setCategories((prev) => prev.map((c) => (c.id === existing.id ? { ...c, archived: false } : c)));
+      else { setSaveState("error"); setLastErrorMsg(updErr.message); }
+      return;
+    }
+    const { data, error: insErr } = await supabase.from("categories").insert({ user_id: userId, label: sugg.label, icon_key: null }).select().single();
+    if (insErr) { setSaveState("error"); setLastErrorMsg(insErr.message); return; }
+    setCategories((prev) => [...prev, data]);
   };
 
-  const removeCategory = async (id) => {
-    const prev = customCategories;
-    setCustomCategories(customCategories.filter((c) => c.id !== id));
-    setConfirmDeleteId(null);
-    const { error: delErr } = await supabase.from("custom_categories").delete().eq("id", id);
-    if (delErr) { setCustomCategories(prev); setSaveState("error"); setLastErrorMsg(delErr.message); }
+  const addCustomCategory = async () => {
+    const label = newCatName.trim();
+    if (!label) { setCatError("Inserisci un nome."); return; }
+    const existsActive = activeCategories.some((c) => c.label.toLowerCase() === label.toLowerCase());
+    if (existsActive) { setCatError("Questa voce esiste già."); return; }
+    const archivedMatch = categories.find((c) => c.archived && c.label.toLowerCase() === label.toLowerCase());
+    if (archivedMatch) {
+      const { error: updErr } = await supabase.from("categories").update({ archived: false, icon_key: newCatIcon }).eq("id", archivedMatch.id);
+      if (updErr) { setCatError(updErr.message); return; }
+      setCategories((prev) => prev.map((c) => (c.id === archivedMatch.id ? { ...c, archived: false, icon_key: newCatIcon } : c)));
+    } else {
+      const { data, error: insErr } = await supabase.from("categories").insert({ user_id: userId, label, icon_key: newCatIcon }).select().single();
+      if (insErr) { setCatError(insErr.message); return; }
+      setCategories((prev) => [...prev, data]);
+    }
+    setNewCatName(""); setNewCatIcon("Tag"); setCatError(""); setAddingCustom(false);
+  };
+
+  const requestRemoval = (cat) => { setRemovalTarget(cat); setRemovalStage("choose"); };
+  const cancelRemoval = () => { setRemovalTarget(null); setRemovalStage("choose"); };
+
+  const archiveCategory = async () => {
+    const cat = removalTarget;
+    const { error: updErr } = await supabase.from("categories").update({ archived: true }).eq("id", cat.rowId);
+    if (!updErr) setCategories((prev) => prev.map((c) => (c.id === cat.rowId ? { ...c, archived: true } : c)));
+    else { setSaveState("error"); setLastErrorMsg(updErr.message); }
+    cancelRemoval();
+  };
+
+  const deleteForever = async () => {
+    const cat = removalTarget;
+    const { error: expDelErr } = await supabase.from("expenses").delete().eq("user_id", userId).eq("category", cat.label);
+    if (!expDelErr) setExpenses((prev) => prev.filter((e) => e.category !== cat.label));
+    const { error: catDelErr } = await supabase.from("categories").delete().eq("id", cat.rowId);
+    if (!catDelErr) setCategories((prev) => prev.filter((c) => c.id !== cat.rowId));
+    cancelRemoval();
   };
 
   const exportCSV = (scope) => {
@@ -335,11 +404,8 @@ function MainApp({ session }) {
           <>
             <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 29 }} />
             <div className="fade-in" style={{ position: "absolute", top: 52, right: 12, background: "#FFFFFF", border: "1px solid #DCE9F5", borderRadius: 10, boxShadow: "0 8px 24px rgba(11,37,69,0.14)", minWidth: 200, overflow: "hidden", zIndex: 31 }}>
-              <button onClick={() => { setMenuOpen(false); setCatError(""); setView("addCategory"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#0B2545", textAlign: "left", borderBottom: "1px solid #EFF5FB" }}>
-                <Plus size={15} color="#5B7B9B" /> Aggiungi nuova voce
-              </button>
-              <button onClick={() => { setMenuOpen(false); setConfirmDeleteId(null); setView("removeCategory"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#0B2545", textAlign: "left", borderBottom: "1px solid #EFF5FB" }}>
-                <X size={15} color="#5B7B9B" /> Rimuovi voce
+              <button onClick={() => { setMenuOpen(false); setCatError(""); setAddingCustom(false); setView("categories"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#0B2545", textAlign: "left", borderBottom: "1px solid #EFF5FB" }}>
+                <Tag size={15} color="#5B7B9B" /> Gestisci categorie
               </button>
               <button onClick={signOut} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#B4483A", textAlign: "left" }}>
                 <LogOut size={15} /> Esci
@@ -362,7 +428,14 @@ function MainApp({ session }) {
               <div style={{ fontSize: 11.5, color: "#5B7B9B", marginTop: 1 }}>{monthExpenses.length} {monthExpenses.length === 1 ? "movimento" : "movimenti"} questo mese</div>
             </div>
             <div style={{ flexShrink: 0, padding: "6px 0" }}>
-              {CATEGORIES.map((c) => {
+              {activeCategories.length === 0 && categoriesLoaded ? (
+                <div style={{ textAlign: "center", padding: "20px 10px" }}>
+                  <div style={{ fontSize: 14, color: "#5B7B9B", marginBottom: 12 }}>Non hai ancora categorie di spesa.</div>
+                  <button onClick={() => setView("categories")} style={{ padding: "10px 18px", borderRadius: 8, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                    Gestisci categorie
+                  </button>
+                </div>
+              ) : activeCategories.map((c) => {
                 const Icon = c.icon;
                 const val = byCategory[c.id] || 0;
                 const pct = Math.round((val / maxCat) * 100);
@@ -408,7 +481,7 @@ function MainApp({ session }) {
             <form onSubmit={addExpense} className="fade-in" style={{ marginTop: 18, flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 10 }}>Categoria</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
-                {CATEGORIES.map((c) => (
+                {activeCategories.map((c) => (
                   <button type="button" key={c.id} className="chip" onClick={() => setForm({ ...form, category: c.id })} style={{ fontSize: 14, padding: "8px 14px", borderRadius: 999, border: form.category === c.id ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: form.category === c.id ? "#2F6FED" : "#FFFFFF", color: form.category === c.id ? "#FFFFFF" : "#0B2545", cursor: "pointer" }}>
                     {c.label}
                   </button>
@@ -431,59 +504,101 @@ function MainApp({ session }) {
               </button>
             </form>
           </>
-        ) : view === "addCategory" ? (
+        ) : view === "categories" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
               <button onClick={() => setView("home")} aria-label="Torna indietro" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B", display: "flex", alignItems: "center" }}><ArrowLeft size={18} /></button>
-              <div style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>Aggiungi nuova voce</div>
+              <div style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>Gestisci categorie</div>
             </div>
-            <div style={{ marginTop: 18, flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }} className="scrollbar-thin">
-              <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome</div>
-              <input type="text" placeholder="Es. Mutuo" value={newCatName} onChange={(e) => { setNewCatName(e.target.value); setCatError(""); }} autoFocus style={{ width: "95%", margin: "0 auto 20px", display: "block", padding: "12px 14px", borderRadius: 10, border: "1px solid #DCE9F5", fontSize: 16 }} />
-              <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 10 }}>Icona</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 16 }}>
-                {ICON_CHOICES.map(({ key, icon: IconComp }) => (
-                  <button type="button" key={key} onClick={() => setNewCatIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", border: newCatIcon === key ? "1.5px solid #2F6FED" : "1px solid #DCE9F5", background: newCatIcon === key ? "#EFF5FB" : "#FFFFFF" }}>
-                    <IconComp size={19} color={newCatIcon === key ? "#2F6FED" : "#5B7B9B"} />
-                  </button>
-                ))}
-              </div>
-              {catError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{catError}</div>}
-              <div style={{ flex: 1, minHeight: 8 }} />
-              <button onClick={addCategory} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0", borderRadius: 10, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 15.5, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
-                <Plus size={17} /> Crea voce
-              </button>
-            </div>
-          </>
-        ) : view === "removeCategory" ? (
-          <>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-              <button onClick={() => setView("home")} aria-label="Torna indietro" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B", display: "flex", alignItems: "center" }}><ArrowLeft size={18} /></button>
-              <div style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>Rimuovi voce</div>
-            </div>
-            <div style={{ marginTop: 14, flex: 1, minHeight: 0, overflowY: "auto" }} className="scrollbar-thin">
-              {customCategories.length > 0 ? customCategories.map((c) => {
+            <div className="scrollbar-thin" style={{ marginTop: 14, flex: 1, minHeight: 0, overflowY: "auto" }}>
+              <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Voci suggerite</div>
+              {SUGGESTED_CATEGORIES.map((sugg) => {
+                const row = categories.find((c) => c.label === sugg.label && !c.archived);
+                const active = !!row;
+                const Icon = sugg.icon;
+                return (
+                  <div key={sugg.id} onClick={() => (active ? requestRemoval({ rowId: row.id, label: sugg.label }) : activateSuggested(sugg))} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 4px", borderBottom: "1px dotted #DCE9F5", cursor: "pointer" }}>
+                    <div style={{ width: 20, height: 20, borderRadius: 5, border: active ? "1.5px solid #2F6FED" : "1.5px solid #DCE9F5", background: active ? "#2F6FED" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {active && <Check size={13} color="#FFFFFF" />}
+                    </div>
+                    <Icon size={17} color="#5B7B9B" style={{ flexShrink: 0 }} />
+                    <div style={{ flex: 1, fontSize: 15 }}>{sugg.label}</div>
+                  </div>
+                );
+              })}
+
+              <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, margin: "18px 0 8px" }}>Voci personalizzate</div>
+              {categories.filter((c) => !c.archived && !SUGGESTED_MAP[c.label]).length > 0 ? categories.filter((c) => !c.archived && !SUGGESTED_MAP[c.label]).map((c) => {
                 const IconComp = ICON_MAP[c.icon_key] || Tag;
-                const confirming = confirmDeleteId === c.id;
                 return (
                   <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 4px", borderBottom: "1px dotted #DCE9F5" }}>
                     <IconComp size={17} color="#5B7B9B" style={{ flexShrink: 0 }} />
                     <div style={{ flex: 1, fontSize: 15 }}>{c.label}</div>
-                    {confirming ? (
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                        <span style={{ fontSize: 12, color: "#5B7B9B" }}>Confermi?</span>
-                        <button onClick={() => removeCategory(c.id)} aria-label="Conferma rimozione" style={{ background: "#B4483A", border: "none", borderRadius: 6, padding: 6, cursor: "pointer", color: "#FFFFFF", display: "flex" }}><Check size={14} /></button>
-                        <button onClick={() => setConfirmDeleteId(null)} aria-label="Annulla" style={{ background: "#FFFFFF", border: "1px solid #DCE9F5", borderRadius: 6, padding: 6, cursor: "pointer", color: "#5B7B9B", display: "flex" }}><X size={14} /></button>
-                      </div>
-                    ) : (
-                      <button onClick={() => setConfirmDeleteId(c.id)} aria-label="Rimuovi" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "#B7C9DC", flexShrink: 0 }}><Trash2 size={15} /></button>
-                    )}
+                    <button onClick={() => requestRemoval({ rowId: c.id, label: c.label })} aria-label="Rimuovi" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "#B7C9DC", flexShrink: 0 }}><Trash2 size={15} /></button>
                   </div>
                 );
               }) : (
-                <div style={{ fontSize: 13, color: "#B7C9DC", padding: "10px 4px" }}>Nessuna voce personalizzata da rimuovere. Le categorie predefinite non possono essere eliminate.</div>
+                <div style={{ fontSize: 13, color: "#B7C9DC", padding: "6px 4px" }}>Nessuna voce personalizzata.</div>
+              )}
+
+              {addingCustom ? (
+                <div className="fade-in" style={{ marginTop: 16, padding: 12, background: "#F3F8FD", borderRadius: 10, border: "1px solid #DCE9F5" }}>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome</div>
+                  <input type="text" placeholder="Es. Mutuo secondo immobile" value={newCatName} onChange={(e) => { setNewCatName(e.target.value); setCatError(""); }} autoFocus style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
+                    {ICON_CHOICES.map(({ key, icon: IconComp }) => (
+                      <button type="button" key={key} onClick={() => setNewCatIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", border: newCatIcon === key ? "1.5px solid #2F6FED" : "1px solid #DCE9F5", background: newCatIcon === key ? "#EFF5FB" : "#FFFFFF" }}>
+                        <IconComp size={19} color={newCatIcon === key ? "#2F6FED" : "#5B7B9B"} />
+                      </button>
+                    ))}
+                  </div>
+                  {catError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{catError}</div>}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setAddingCustom(false); setNewCatName(""); setCatError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
+                    <button onClick={addCustomCategory} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Crea voce</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setAddingCustom(true)} style={{ marginTop: 16, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 0", borderRadius: 8, border: "1px dashed #2F6FED", background: "#FFFFFF", color: "#2F6FED", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                  <Plus size={16} /> Crea voce personalizzata
+                </button>
               )}
             </div>
+
+            {removalTarget && (
+              <>
+                <div onClick={cancelRemoval} style={{ position: "fixed", inset: 0, background: "rgba(11,37,69,0.35)", zIndex: 39 }} />
+                <div className="fade-in" style={{ position: "fixed", left: 20, right: 20, bottom: 24, maxWidth: 520, margin: "0 auto", background: "#FFFFFF", borderRadius: 14, padding: 18, boxShadow: "0 12px 32px rgba(11,37,69,0.22)", zIndex: 40 }}>
+                  {removalStage === "choose" ? (
+                    <>
+                      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Rimuovere "{removalTarget.label}"?</div>
+                      <div style={{ fontSize: 13, color: "#5B7B9B", marginBottom: 16 }}>Scegli cosa fare delle spese già registrate in questa categoria.</div>
+                      <button onClick={() => setRemovalStage("confirmDelete")} style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "1px solid #B4483A", background: "#FFFFFF", color: "#B4483A", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 8 }}>
+                        Sì, elimina — non mi interessa tenere traccia
+                      </button>
+                      <button onClick={archiveCategory} style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#0B2545", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 8 }}>
+                        No, mantieni lo storico
+                      </button>
+                      <button onClick={cancelRemoval} style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "none", background: "none", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>
+                        Annulla
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Sei sicuro?</div>
+                      <div style={{ fontSize: 13, color: "#5B7B9B", marginBottom: 16 }}>Questa azione eliminerà definitivamente "{removalTarget.label}" e tutte le spese collegate. Non si può annullare.</div>
+                      <button onClick={deleteForever} style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "none", background: "#B4483A", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 8 }}>
+                        Conferma eliminazione definitiva
+                      </button>
+                      <button onClick={cancelRemoval} style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>
+                        Annulla
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
           </>
         ) : (
           <>
@@ -504,7 +619,7 @@ function MainApp({ session }) {
                 <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 5 }}>Categoria</div>
                 <select value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })} style={{ width: "100%", padding: "6px 8px", borderRadius: 7, border: "1px solid #DCE9F5", fontSize: 16, color: "#0B2545", marginBottom: 8, background: "#FFFFFF" }}>
                   <option value="Tutte">Tutte le categorie</option>
-                  {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
+                  {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}{c.archived ? " (archiviata)" : ""}</option>)}
                 </select>
                 <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 5 }}>Importo</div>
                 <select value={filters.amountMode} onChange={(e) => setFilters({ ...filters, amountMode: e.target.value })} style={{ width: "100%", padding: "6px 8px", borderRadius: 7, border: "1px solid #DCE9F5", fontSize: 16, color: "#0B2545", marginBottom: 6, background: "#FFFFFF" }}>
