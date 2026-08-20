@@ -81,6 +81,20 @@ const ICON_CHOICES = [
 const ICON_MAP = ICON_CHOICES.reduce((m, i) => ((m[i.key] = i.icon), m), {});
 
 const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+const PERIODS = [
+  { id: "month", label: "Mese", months: 1, phrase: "questo mese" },
+  { id: "quarter", label: "Trimestre", months: 3, phrase: "questo trimestre" },
+  { id: "semester", label: "Semestre", months: 6, phrase: "questo semestre" },
+  { id: "year", label: "Anno", months: 12, phrase: "quest'anno" },
+];
+function periodLabel(periodMode, cursor) {
+  const p = PERIODS.find((x) => x.id === periodMode);
+  if (p.months === 1) return `${MESI[cursor.month]} ${cursor.year}`;
+  if (p.months === 12) return `${cursor.year}`;
+  const endIdx = cursor.year * 12 + cursor.month + p.months - 1;
+  const endMonth = ((endIdx % 12) + 12) % 12;
+  return `${MESI[cursor.month].slice(0, 3)}–${MESI[endMonth].slice(0, 3)} ${cursor.year}`;
+}
 
 function fmtEUR(n) {
   return new Intl.NumberFormat("it-IT", { style: "currency", currency: "EUR" }).format(n);
@@ -197,6 +211,7 @@ function MainApp({ session }) {
   const [removalTarget, setRemovalTarget] = useState(null);
   const [removalStage, setRemovalStage] = useState("choose");
   const [filters, setFilters] = useState({ dateFrom: "", dateTo: "", category: "Tutte", amountMode: "any", amountMin: "", amountMax: "" });
+  const [periodMode, setPeriodMode] = useState("month");
 
   const CATEGORIES = useMemo(() => [...categories.map((c) => ({ id: c.label, label: c.label, icon: ICON_MAP[c.icon_key] || (SUGGESTED_MAP[c.label] && SUGGESTED_MAP[c.label].icon) || Tag, archived: c.archived })), ALTRO_CATEGORY], [categories]);
   const activeCategories = useMemo(() => CATEGORIES.filter((c) => !c.archived), [CATEGORIES]);
@@ -244,15 +259,26 @@ function MainApp({ session }) {
     })();
   }, []);
 
-  const currentKey = `${cursor.year}-${String(cursor.month + 1).padStart(2, "0")}`;
-  const monthExpenses = useMemo(() => expenses.filter((e) => monthKey(e.date) === currentKey).sort((a, b) => new Date(b.date) - new Date(a.date)), [expenses, currentKey]);
+  const periodMonths = PERIODS.find((p) => p.id === periodMode).months;
+  const periodMonthKeys = useMemo(() => {
+    const keys = [];
+    const startIdx = cursor.year * 12 + cursor.month;
+    for (let i = 0; i < periodMonths; i++) {
+      const idx = startIdx + i;
+      const y = Math.floor(idx / 12);
+      const m = ((idx % 12) + 12) % 12;
+      keys.push(`${y}-${String(m + 1).padStart(2, "0")}`);
+    }
+    return keys;
+  }, [cursor, periodMonths]);
+  const periodExpenses = useMemo(() => expenses.filter((e) => periodMonthKeys.includes(monthKey(e.date))).sort((a, b) => new Date(b.date) - new Date(a.date)), [expenses, periodMonthKeys]);
   const byCategory = useMemo(() => {
     const map = {};
     CATEGORIES.forEach((c) => (map[c.id] = 0));
-    monthExpenses.forEach((e) => (map[e.category] = (map[e.category] || 0) + Number(e.amount)));
+    periodExpenses.forEach((e) => (map[e.category] = (map[e.category] || 0) + Number(e.amount)));
     return map;
-  }, [monthExpenses, CATEGORIES]);
-  const total = useMemo(() => monthExpenses.reduce((s, e) => s + Number(e.amount), 0), [monthExpenses]);
+  }, [periodExpenses, CATEGORIES]);
+  const total = useMemo(() => periodExpenses.reduce((s, e) => s + Number(e.amount), 0), [periodExpenses]);
   const maxCat = Math.max(1, ...Object.values(byCategory));
 
   const filtersActive = filters.dateFrom || filters.dateTo || filters.category !== "Tutte" || filters.amountMode !== "any";
@@ -275,13 +301,23 @@ function MainApp({ session }) {
   const filteredTotal = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount), 0), [filteredExpenses]);
   const resetFilters = () => setFilters({ dateFrom: "", dateTo: "", category: "Tutte", amountMode: "any", amountMin: "", amountMax: "" });
 
-  const goMonth = (delta) => {
+  const goPeriod = (delta) => {
     setCursor((c) => {
-      let m = c.month + delta, y = c.year;
-      if (m < 0) { m = 11; y -= 1; }
-      if (m > 11) { m = 0; y += 1; }
-      return { year: y, month: m };
+      const idx = c.year * 12 + c.month + delta * periodMonths;
+      const year = Math.floor(idx / 12);
+      const month = ((idx % 12) + 12) % 12;
+      return { year, month };
     });
+  };
+
+  const changePeriod = (id) => {
+    const months = PERIODS.find((p) => p.id === id).months;
+    setCursor((c) => {
+      const idx = c.year * 12 + c.month;
+      const start = Math.floor(idx / months) * months;
+      return { year: Math.floor(start / 12), month: ((start % 12) + 12) % 12 };
+    });
+    setPeriodMode(id);
   };
 
   const addExpense = async (e) => {
@@ -419,13 +455,20 @@ function MainApp({ session }) {
         {view === "home" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-              <button onClick={() => goMonth(-1)} aria-label="Mese precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B" }}><ChevronLeft size={18} /></button>
-              <div style={{ fontSize: 11.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600 }}>{MESI[cursor.month]} {cursor.year}</div>
-              <button onClick={() => goMonth(1)} aria-label="Mese successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B" }}><ChevronRight size={18} /></button>
+              <button onClick={() => goPeriod(-1)} aria-label="Periodo precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B" }}><ChevronLeft size={18} /></button>
+              <div style={{ fontSize: 11.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600 }}>{periodLabel(periodMode, cursor)}</div>
+              <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B" }}><ChevronRight size={18} /></button>
             </div>
-            <div key={currentKey} className="fade-in" style={{ textAlign: "center", padding: "2px 0 10px", borderBottom: "1px solid #DCE9F5", flexShrink: 0 }}>
+            <div style={{ display: "flex", gap: 6, marginTop: 10, flexShrink: 0 }}>
+              {PERIODS.map((p) => (
+                <button key={p.id} onClick={() => changePeriod(p.id)} style={{ flex: 1, padding: "7px 0", borderRadius: 999, border: periodMode === p.id ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: periodMode === p.id ? "#2F6FED" : "#FFFFFF", color: periodMode === p.id ? "#FFFFFF" : "#5B7B9B", fontSize: 12.5, fontWeight: 600, cursor: "pointer" }}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <div key={`${periodMode}-${cursor.year}-${cursor.month}`} className="fade-in" style={{ textAlign: "center", padding: "10px 0", borderBottom: "1px solid #DCE9F5", flexShrink: 0 }}>
               <div className="mono" style={{ fontSize: 34, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{fmtEUR(total)}</div>
-              <div style={{ fontSize: 11.5, color: "#5B7B9B", marginTop: 1 }}>{monthExpenses.length} {monthExpenses.length === 1 ? "movimento" : "movimenti"} questo mese</div>
+              <div style={{ fontSize: 11.5, color: "#5B7B9B", marginTop: 1 }}>{periodExpenses.length} {periodExpenses.length === 1 ? "movimento" : "movimenti"} {PERIODS.find((p) => p.id === periodMode).phrase}</div>
             </div>
             <div style={{ flexShrink: 0, padding: "6px 0" }}>
               {activeCategories.length === 0 && categoriesLoaded ? (
