@@ -82,18 +82,32 @@ const ICON_MAP = ICON_CHOICES.reduce((m, i) => ((m[i.key] = i.icon), m), {});
 
 const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
 const PERIODS = [
-  { id: "month", label: "Mese", months: 1, phrase: "questo mese" },
-  { id: "quarter", label: "Trimestre", months: 3, phrase: "questo trimestre" },
-  { id: "semester", label: "Semestre", months: 6, phrase: "questo semestre" },
-  { id: "year", label: "Anno", months: 12, phrase: "quest'anno" },
+  { id: "month", label: "Mese", navStep: 1, phrase: "questo mese" },
+  { id: "quarter", label: "Trim", navStep: 3, phrase: "questo trimestre" },
+  { id: "semester", label: "Sem", navStep: 6, phrase: "questo semestre" },
+  { id: "year", label: "Annuale", navStep: 12, phrase: "negli ultimi 12 mesi" },
+  { id: "ytd", label: "YTD", navStep: 12, phrase: "da inizio anno" },
 ];
+function monthKeyFromIdx(idx) {
+  const y = Math.floor(idx / 12);
+  const m = ((idx % 12) + 12) % 12;
+  return `${y}-${String(m + 1).padStart(2, "0")}`;
+}
 function periodLabel(periodMode, cursor) {
-  const p = PERIODS.find((x) => x.id === periodMode);
-  if (p.months === 1) return `${MESI[cursor.month]} ${cursor.year}`;
-  if (p.months === 12) return `${cursor.year}`;
-  const endIdx = cursor.year * 12 + cursor.month + p.months - 1;
-  const endMonth = ((endIdx % 12) + 12) % 12;
-  return `${MESI[cursor.month].slice(0, 3)}–${MESI[endMonth].slice(0, 3)} ${cursor.year}`;
+  if (periodMode === "month") return `${MESI[cursor.month]} ${cursor.year}`;
+  if (periodMode === "quarter" || periodMode === "semester") {
+    const months = periodMode === "quarter" ? 3 : 6;
+    const endIdx = cursor.year * 12 + cursor.month + months - 1;
+    const endMonth = ((endIdx % 12) + 12) % 12;
+    return `${MESI[cursor.month].slice(0, 3)}–${MESI[endMonth].slice(0, 3)} ${cursor.year}`;
+  }
+  if (periodMode === "year") {
+    const startIdx = cursor.year * 12 + cursor.month - 11;
+    const startYear = Math.floor(startIdx / 12);
+    const startMonth = ((startIdx % 12) + 12) % 12;
+    return `${MESI[startMonth].slice(0, 3)} ${startYear} – ${MESI[cursor.month].slice(0, 3)} ${cursor.year}`;
+  }
+  if (periodMode === "ytd") return `Gen – ${MESI[cursor.month].slice(0, 3)} ${cursor.year}`;
 }
 
 function fmtEUR(n) {
@@ -212,6 +226,11 @@ function MainApp({ session }) {
   const [removalStage, setRemovalStage] = useState("choose");
   const [filters, setFilters] = useState({ dateFrom: "", dateTo: "", category: "Tutte", amountMode: "any", amountMin: "", amountMax: "" });
   const [periodMode, setPeriodMode] = useState("month");
+  const [lastMonthCursor, setLastMonthCursor] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ category: "", amount: "", date: "", note: "" });
+  const [editError, setEditError] = useState("");
+  const [editDeleteConfirm, setEditDeleteConfirm] = useState(false);
 
   const CATEGORIES = useMemo(() => [...categories.map((c) => ({ id: c.label, label: c.label, icon: ICON_MAP[c.icon_key] || (SUGGESTED_MAP[c.label] && SUGGESTED_MAP[c.label].icon) || Tag, archived: c.archived })), ALTRO_CATEGORY], [categories]);
   const activeCategories = useMemo(() => CATEGORIES.filter((c) => !c.archived), [CATEGORIES]);
@@ -259,18 +278,19 @@ function MainApp({ session }) {
     })();
   }, []);
 
-  const periodMonths = PERIODS.find((p) => p.id === periodMode).months;
+  useEffect(() => {
+    if (periodMode === "month") setLastMonthCursor(cursor);
+  }, [periodMode, cursor]);
+
   const periodMonthKeys = useMemo(() => {
-    const keys = [];
-    const startIdx = cursor.year * 12 + cursor.month;
-    for (let i = 0; i < periodMonths; i++) {
-      const idx = startIdx + i;
-      const y = Math.floor(idx / 12);
-      const m = ((idx % 12) + 12) % 12;
-      keys.push(`${y}-${String(m + 1).padStart(2, "0")}`);
-    }
-    return keys;
-  }, [cursor, periodMonths]);
+    const idx = cursor.year * 12 + cursor.month;
+    if (periodMode === "month") return [monthKeyFromIdx(idx)];
+    if (periodMode === "quarter") return Array.from({ length: 3 }, (_, i) => monthKeyFromIdx(idx + i));
+    if (periodMode === "semester") return Array.from({ length: 6 }, (_, i) => monthKeyFromIdx(idx + i));
+    if (periodMode === "year") return Array.from({ length: 12 }, (_, i) => monthKeyFromIdx(idx - 11 + i));
+    if (periodMode === "ytd") return Array.from({ length: cursor.month + 1 }, (_, i) => monthKeyFromIdx(cursor.year * 12 + i));
+    return [];
+  }, [cursor, periodMode]);
   const periodExpenses = useMemo(() => expenses.filter((e) => periodMonthKeys.includes(monthKey(e.date))).sort((a, b) => new Date(b.date) - new Date(a.date)), [expenses, periodMonthKeys]);
   const byCategory = useMemo(() => {
     const map = {};
@@ -302,8 +322,9 @@ function MainApp({ session }) {
   const resetFilters = () => setFilters({ dateFrom: "", dateTo: "", category: "Tutte", amountMode: "any", amountMin: "", amountMax: "" });
 
   const goPeriod = (delta) => {
+    const navStep = PERIODS.find((p) => p.id === periodMode).navStep;
     setCursor((c) => {
-      const idx = c.year * 12 + c.month + delta * periodMonths;
+      const idx = c.year * 12 + c.month + delta * navStep;
       const year = Math.floor(idx / 12);
       const month = ((idx % 12) + 12) % 12;
       return { year, month };
@@ -311,12 +332,19 @@ function MainApp({ session }) {
   };
 
   const changePeriod = (id) => {
-    const months = PERIODS.find((p) => p.id === id).months;
-    setCursor((c) => {
-      const idx = c.year * 12 + c.month;
-      const start = Math.floor(idx / months) * months;
-      return { year: Math.floor(start / 12), month: ((start % 12) + 12) % 12 };
-    });
+    if (id === "month") {
+      setCursor(lastMonthCursor || cursor);
+      setPeriodMode("month");
+      return;
+    }
+    if (id === "quarter" || id === "semester") {
+      const months = id === "quarter" ? 3 : 6;
+      setCursor((c) => {
+        const idx = c.year * 12 + c.month;
+        const start = Math.floor(idx / months) * months;
+        return { year: Math.floor(start / 12), month: ((start % 12) + 12) % 12 };
+      });
+    }
     setPeriodMode(id);
   };
 
@@ -340,6 +368,31 @@ function MainApp({ session }) {
     setExpenses(expenses.filter((e) => e.id !== id));
     const { error: delErr } = await supabase.from("expenses").delete().eq("id", id);
     if (delErr) { setExpenses(prev); setSaveState("error"); setLastErrorMsg(delErr.message); }
+  };
+
+  const openEdit = (exp) => {
+    setEditingId(exp.id);
+    setEditForm({ category: exp.category, amount: String(exp.amount).replace(".", ","), date: exp.date, note: exp.note || "" });
+    setEditError(""); setEditDeleteConfirm(false);
+    setView("editExpense");
+  };
+
+  const saveEditExpense = async () => {
+    const amt = parseFloat(String(editForm.amount).replace(",", "."));
+    if (!amt || amt <= 0) { setEditError("Inserisci un importo valido."); return; }
+    if (!editForm.date) { setEditError("Inserisci una data."); return; }
+    setEditError("");
+    const { data, error: updErr } = await supabase.from("expenses").update({ category: editForm.category, amount: amt, date: editForm.date, note: editForm.note.trim() }).eq("id", editingId).select().single();
+    if (updErr) { setEditError(updErr.message); return; }
+    setExpenses((prev) => prev.map((e) => (e.id === editingId ? { id: data.id, category: data.category, amount: Number(data.amount), date: data.date, note: data.note || "" } : e)));
+    setEditingId(null);
+    setView("list");
+  };
+
+  const confirmDeleteEditing = async () => {
+    await removeExpense(editingId);
+    setEditingId(null); setEditDeleteConfirm(false);
+    setView("list");
   };
 
   const activateSuggested = async (sugg) => {
@@ -547,6 +600,51 @@ function MainApp({ session }) {
               </button>
             </form>
           </>
+        ) : view === "editExpense" ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              <button onClick={() => setView("list")} aria-label="Torna indietro" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B", display: "flex", alignItems: "center" }}><ArrowLeft size={18} /></button>
+              <div style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>Modifica movimento</div>
+            </div>
+            <div className="fade-in scrollbar-thin" style={{ marginTop: 18, flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 10 }}>Categoria</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+                {(activeCategories.some((c) => c.id === editForm.category) ? activeCategories : [...activeCategories, CATEGORIES.find((c) => c.id === editForm.category)].filter(Boolean)).map((c) => (
+                  <button type="button" key={c.id} className="chip" onClick={() => setEditForm({ ...editForm, category: c.id })} style={{ fontSize: 14, padding: "8px 14px", borderRadius: 999, border: editForm.category === c.id ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: editForm.category === c.id ? "#2F6FED" : "#FFFFFF", color: editForm.category === c.id ? "#FFFFFF" : "#0B2545", cursor: "pointer" }}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Importo</div>
+              <input type="text" inputMode="decimal" placeholder="0,00 €" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="mono" style={{ width: "95%", margin: "0 auto 20px", display: "block", padding: "14px 14px", borderRadius: 10, border: "1px solid #DCE9F5", fontSize: 24, fontWeight: 600 }} />
+              <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Data</div>
+                  <input type="date" value={editForm.date} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} style={{ width: "95%", margin: "0 auto", display: "block", padding: "12px 12px", borderRadius: 10, border: "1px solid #DCE9F5", fontSize: 16, color: "#0B2545" }} />
+                </div>
+              </div>
+              <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nota (opzionale)</div>
+              <input type="text" placeholder="Es. cena con amici" value={editForm.note} onChange={(e) => setEditForm({ ...editForm, note: e.target.value })} style={{ width: "95%", margin: "0 auto 8px", display: "block", padding: "12px 14px", borderRadius: 10, border: "1px solid #DCE9F5", fontSize: 16 }} />
+              {editError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{editError}</div>}
+              <div style={{ flex: 1, minHeight: 8 }} />
+              <button onClick={saveEditExpense} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0", borderRadius: 10, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 15.5, fontWeight: 600, cursor: "pointer", flexShrink: 0, marginBottom: 8 }}>
+                <Check size={17} /> Salva modifiche
+              </button>
+              {editDeleteConfirm ? (
+                <div style={{ padding: 12, background: "#FBEEEC", borderRadius: 10, border: "1px solid #EAC4BC" }}>
+                  <div style={{ fontSize: 13.5, color: "#0B2545", marginBottom: 10 }}>Sei sicuro di volerlo eliminare?</div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => setEditDeleteConfirm(false)} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 13.5, cursor: "pointer" }}>Annulla</button>
+                    <button onClick={confirmDeleteEditing} style={{ flex: 1, padding: "9px 0", borderRadius: 8, border: "none", background: "#B4483A", color: "#FFFFFF", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>Elimina definitivamente</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setEditDeleteConfirm(true)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "12px 0", borderRadius: 10, border: "1px solid #EAC4BC", background: "#FFFFFF", color: "#B4483A", fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+                  <Trash2 size={16} /> Elimina movimento
+                </button>
+              )}
+            </div>
+          </>
         ) : view === "categories" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
@@ -695,7 +793,7 @@ function MainApp({ session }) {
                 const Icon = cat ? cat.icon : CircleEllipsis;
                 const d = new Date(e.date);
                 return (
-                  <div key={e.id} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 6px", borderBottom: "1px dotted #DCE9F5" }}>
+                  <div key={e.id} className="row-hover" onClick={() => openEdit(e)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 6px", borderBottom: "1px dotted #DCE9F5", cursor: "pointer" }}>
                     <Icon size={18} color="#5B7B9B" style={{ flexShrink: 0 }} />
                     <div style={{ width: 40, fontSize: 14, color: "#5B7B9B", flexShrink: 0 }}>{String(d.getDate()).padStart(2, "0")}/{String(d.getMonth() + 1).padStart(2, "0")}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -703,7 +801,6 @@ function MainApp({ session }) {
                       {e.note && <div style={{ fontSize: 13, color: "#B7C9DC" }}>{e.category}</div>}
                     </div>
                     <div className="mono" style={{ fontSize: 18, fontWeight: 600, flexShrink: 0 }}>{fmtEUR(e.amount)}</div>
-                    <button onClick={() => removeExpense(e.id)} aria-label="Elimina" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "#B7C9DC", flexShrink: 0 }}><Trash2 size={15} /></button>
                   </div>
                 );
               }) : (
