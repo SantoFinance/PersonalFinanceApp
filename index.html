@@ -31,6 +31,8 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid #2F6FED; ou
 .row-hover:hover { background: #F3F8FD; }
 .scrollbar-thin::-webkit-scrollbar { width: 6px; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: #DCE9F5; border-radius: 3px; }
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; height: 0; width: 0; }
 @media (prefers-reduced-motion: reduce) {
   .bar-fill, .fade-in, .splash, .splash-ring, .splash-bar-fill { animation: none !important; transition: none !important; }
   .splash-bar-fill { width: 100%; }
@@ -630,8 +632,8 @@ function MainApp({ session, onBack }) {
             ) : (
               <>
                 {accounts.length > 0 && (
-                  <div style={{ display: "flex", gap: 6, marginBottom: 10, flexShrink: 0, overflowX: "auto" }}>
-                    <button onClick={() => setActiveAccountId("all")} style={{ padding: "6px 12px", borderRadius: 999, border: activeAccountId === "all" ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: activeAccountId === "all" ? "#2F6FED" : "#FFFFFF", color: activeAccountId === "all" ? "#FFFFFF" : "#5B7B9B", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>Totale</button>
+                  <div className="no-scrollbar" style={{ display: "flex", gap: 6, marginBottom: 10, flexShrink: 0, overflowX: "auto" }}>
+                    <button onClick={() => setActiveAccountId("all")} style={{ padding: "6px 14px", borderRadius: 999, border: activeAccountId === "all" ? "1px solid #2F6FED" : "1.5px solid #0B2545", background: activeAccountId === "all" ? "#2F6FED" : "#FFFFFF", color: activeAccountId === "all" ? "#FFFFFF" : "#0B2545", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>Totale</button>
                     {accounts.map((a) => (
                       <button key={a.id} onClick={() => setActiveAccountId(a.id)} style={{ padding: "6px 12px", borderRadius: 999, border: activeAccountId === a.id ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: activeAccountId === a.id ? "#2F6FED" : "#FFFFFF", color: activeAccountId === a.id ? "#FFFFFF" : "#5B7B9B", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>{a.name}</button>
                     ))}
@@ -678,7 +680,7 @@ function MainApp({ session, onBack }) {
               <div className="mono" style={{ fontSize: 34, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{fmtEUR(total)}</div>
               <div style={{ fontSize: 11.5, color: "#5B7B9B", marginTop: 1 }}>{periodExpenses.length} {periodExpenses.length === 1 ? "movimento" : "movimenti"} {PERIODS.find((p) => p.id === periodMode).phrase}</div>
             </div>
-            <div className="scrollbar-thin" style={{ height: 340, flexShrink: 0, overflowY: "auto", padding: "6px 0" }}>
+            <div className="scrollbar-thin" style={{ flex: "1 1 auto", maxHeight: 360, minHeight: 0, overflowY: "auto", padding: "6px 0" }}>
               {activeCategories.length === 0 && categoriesLoaded ? (
                 <div style={{ textAlign: "center", padding: "20px 10px" }}>
                   <div style={{ fontSize: 14, color: "#5B7B9B", marginBottom: 12 }}>Non hai ancora categorie di spesa.</div>
