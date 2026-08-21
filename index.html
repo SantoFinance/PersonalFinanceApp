@@ -678,7 +678,7 @@ function MainApp({ session, onBack }) {
               <div className="mono" style={{ fontSize: 34, fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.1 }}>{fmtEUR(total)}</div>
               <div style={{ fontSize: 11.5, color: "#5B7B9B", marginTop: 1 }}>{periodExpenses.length} {periodExpenses.length === 1 ? "movimento" : "movimenti"} {PERIODS.find((p) => p.id === periodMode).phrase}</div>
             </div>
-            <div className="scrollbar-thin" style={{ height: 340, flexShrink: 0, overflowY: "auto", padding: "6px 0" }}>
+            <div className="scrollbar-thin" style={{ flex: "1 1 auto", maxHeight: 360, minHeight: 0, overflowY: "auto", padding: "6px 0" }}>
               {activeCategories.length === 0 && categoriesLoaded ? (
                 <div style={{ textAlign: "center", padding: "20px 10px" }}>
                   <div style={{ fontSize: 14, color: "#5B7B9B", marginBottom: 12 }}>Non hai ancora categorie di spesa.</div>
