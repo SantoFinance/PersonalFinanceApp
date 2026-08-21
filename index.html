@@ -82,11 +82,11 @@ const ICON_MAP = ICON_CHOICES.reduce((m, i) => ((m[i.key] = i.icon), m), {});
 
 const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
 const PERIODS = [
-  { id: "month", label: "Mese", navStep: 1, phrase: "questo mese" },
-  { id: "quarter", label: "Trim", navStep: 3, phrase: "questo trimestre" },
-  { id: "semester", label: "Sem", navStep: 6, phrase: "questo semestre" },
-  { id: "year", label: "Annuale", navStep: 12, phrase: "negli ultimi 12 mesi" },
+  { id: "month", label: "1M", navStep: 1, phrase: "questo mese" },
+  { id: "quarter", label: "3M", navStep: 3, phrase: "questo trimestre" },
+  { id: "semester", label: "6M", navStep: 6, phrase: "questo semestre" },
   { id: "ytd", label: "YTD", navStep: 12, phrase: "da inizio anno" },
+  { id: "year", label: "1Y", navStep: 12, phrase: "negli ultimi 12 mesi" },
 ];
 function monthKeyFromIdx(idx) {
   const y = Math.floor(idx / 12);
@@ -395,35 +395,44 @@ function MainApp({ session }) {
     setView("list");
   };
 
+  const [catBusy, setCatBusy] = useState(false);
+
   const activateSuggested = async (sugg) => {
+    if (catBusy) return;
+    setCatBusy(true);
     const existing = categories.find((c) => c.label === sugg.label);
     if (existing) {
       const { error: updErr } = await supabase.from("categories").update({ archived: false }).eq("id", existing.id);
       if (!updErr) setCategories((prev) => prev.map((c) => (c.id === existing.id ? { ...c, archived: false } : c)));
       else { setSaveState("error"); setLastErrorMsg(updErr.message); }
+      setCatBusy(false);
       return;
     }
     const { data, error: insErr } = await supabase.from("categories").insert({ user_id: userId, label: sugg.label, icon_key: null }).select().single();
-    if (insErr) { setSaveState("error"); setLastErrorMsg(insErr.message); return; }
+    if (insErr) { setSaveState("error"); setLastErrorMsg(insErr.message); setCatBusy(false); return; }
     setCategories((prev) => [...prev, data]);
+    setCatBusy(false);
   };
 
   const addCustomCategory = async () => {
+    if (catBusy) return;
     const label = newCatName.trim();
     if (!label) { setCatError("Inserisci un nome."); return; }
     const existsActive = activeCategories.some((c) => c.label.toLowerCase() === label.toLowerCase());
     if (existsActive) { setCatError("Questa voce esiste già."); return; }
+    setCatBusy(true);
     const archivedMatch = categories.find((c) => c.archived && c.label.toLowerCase() === label.toLowerCase());
     if (archivedMatch) {
       const { error: updErr } = await supabase.from("categories").update({ archived: false, icon_key: newCatIcon }).eq("id", archivedMatch.id);
-      if (updErr) { setCatError(updErr.message); return; }
+      if (updErr) { setCatError(updErr.message); setCatBusy(false); return; }
       setCategories((prev) => prev.map((c) => (c.id === archivedMatch.id ? { ...c, archived: false, icon_key: newCatIcon } : c)));
     } else {
       const { data, error: insErr } = await supabase.from("categories").insert({ user_id: userId, label, icon_key: newCatIcon }).select().single();
-      if (insErr) { setCatError(insErr.message); return; }
+      if (insErr) { setCatError(insErr.message); setCatBusy(false); return; }
       setCategories((prev) => [...prev, data]);
     }
     setNewCatName(""); setNewCatIcon("Tag"); setCatError(""); setAddingCustom(false);
+    setCatBusy(false);
   };
 
   const requestRemoval = (cat) => { setRemovalTarget(cat); setRemovalStage("choose"); };
@@ -697,7 +706,7 @@ function MainApp({ session }) {
                   {catError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{catError}</div>}
                   <div style={{ display: "flex", gap: 8 }}>
                     <button onClick={() => { setAddingCustom(false); setNewCatName(""); setCatError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
-                    <button onClick={addCustomCategory} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>Crea voce</button>
+                    <button onClick={addCustomCategory} disabled={catBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: catBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: catBusy ? "default" : "pointer" }}>Crea voce</button>
                   </div>
                 </div>
               ) : (
