@@ -26,6 +26,8 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid #2F6FED; ou
 .splash-bar-fill { animation: splashBar 1.1s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both; }
 @keyframes splashBar { from { width: 0%; } to { width: 100%; } }
 .chip { transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease; }
+.spinner { animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 .row-hover:hover { background: #F3F8FD; }
 .scrollbar-thin::-webkit-scrollbar { width: 6px; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: #DCE9F5; border-radius: 3px; }
@@ -123,6 +125,7 @@ function todayISO() {
 function App() {
   const [session, setSession] = useState(undefined);
   const [section, setSection] = useState("hub");
+  const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -130,10 +133,35 @@ function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  if (session === undefined) return <SplashOnly />;
+  useEffect(() => {
+    const t = setTimeout(() => setShowSplash(false), 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (showSplash || session === undefined) return <Splash />;
   if (!session) return <AuthScreen />;
   if (section === "expenses") return <MainApp session={session} onBack={() => setSection("hub")} />;
   return <Hub onSelect={setSection} />;
+}
+
+function Splash() {
+  return (
+    <div style={{ height: "100dvh", width: "100%", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="splash" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+        <div className="splash-ring" style={{ width: 46, height: 46, borderRadius: "50%", border: "1.5px solid #2F6FED", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span className="mono" style={{ fontSize: 20, fontWeight: 600, color: "#2F6FED" }}>€</span>
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 4 }}>Personal Finance</div>
+          <div style={{ fontSize: 27, fontWeight: 700, color: "#0B2545", letterSpacing: "-0.01em" }}>Tracker</div>
+        </div>
+        <div style={{ width: 80, height: 3, background: "#EFF5FB", borderRadius: 2, overflow: "hidden" }}>
+          <div className="splash-bar-fill" style={{ height: "100%", background: "#2F6FED", borderRadius: 2 }} />
+        </div>
+        <div style={{ fontSize: 9.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "#B7C9DC", fontWeight: 600, marginTop: 2 }}>Produced by Cozy Macaron</div>
+      </div>
+    </div>
+  );
 }
 
 function Hub({ onSelect }) {
@@ -169,14 +197,6 @@ function Hub({ onSelect }) {
       <button onClick={() => supabase.auth.signOut()} style={{ marginTop: 32, background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#B4483A", display: "flex", alignItems: "center", gap: 6 }}>
         <LogOut size={14} /> Esci
       </button>
-    </div>
-  );
-}
-
-function SplashOnly() {
-  return (
-    <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FFFFFF" }}>
-      <span className="mono" style={{ color: "#2F6FED", fontSize: 20, fontWeight: 600 }}>€</span>
     </div>
   );
 }
@@ -243,7 +263,6 @@ function AuthScreen() {
 
 function MainApp({ session, onBack }) {
   const userId = session.user.id;
-  const [splashVisible, setSplashVisible] = useState(true);
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
@@ -279,7 +298,6 @@ function MainApp({ session, onBack }) {
     }
   }, [categoriesLoaded, activeCategories]);
 
-  useEffect(() => { const t = setTimeout(() => setSplashVisible(false), 2000); return () => clearTimeout(t); }, []);
 
   useEffect(() => {
     (async () => {
@@ -499,26 +517,17 @@ function MainApp({ session, onBack }) {
 
   const signOut = () => supabase.auth.signOut();
 
+  if (!loaded || !categoriesLoaded) {
+    return (
+      <div style={{ height: "100dvh", width: "100%", background: "#FFFFFF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
+        <div className="spinner" style={{ width: 30, height: 30, borderRadius: "50%", border: "3px solid #DCE9F5", borderTopColor: "#2F6FED" }} />
+        <div style={{ fontSize: 13.5, color: "#5B7B9B" }}>Sto caricando le spese…</div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ height: "100dvh", width: "100%", background: "#FFFFFF", overflow: "hidden", display: "flex", flexDirection: "column" }}>
-      {splashVisible && (
-        <div className="splash" style={{ position: "fixed", inset: 0, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-            <div className="splash-ring" style={{ width: 46, height: 46, borderRadius: "50%", border: "1.5px solid #2F6FED", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <span className="mono" style={{ fontSize: 20, fontWeight: 600, color: "#2F6FED" }}>€</span>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 4 }}>Personal Finance</div>
-              <div style={{ fontSize: 27, fontWeight: 700, color: "#0B2545", letterSpacing: "-0.01em" }}>Tracker</div>
-            </div>
-            <div style={{ width: 80, height: 3, background: "#EFF5FB", borderRadius: 2, overflow: "hidden" }}>
-              <div className="splash-bar-fill" style={{ height: "100%", background: "#2F6FED", borderRadius: 2 }} />
-            </div>
-            <div style={{ fontSize: 9.5, letterSpacing: "0.14em", textTransform: "uppercase", color: "#B7C9DC", fontWeight: 600, marginTop: 2 }}>Produced by Cozy Macaron</div>
-          </div>
-        </div>
-      )}
-
       <div style={{ position: "relative", flexShrink: 0, zIndex: 30 }}>
         <div style={{ height: 48, background: "#2F6FED", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 8px 0 4px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
