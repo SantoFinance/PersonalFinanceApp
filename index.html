@@ -97,16 +97,12 @@ function monthKeyFromIdx(idx) {
 }
 function periodLabel(periodMode, cursor) {
   if (periodMode === "month") return `${MESI[cursor.month]} ${cursor.year}`;
-  if (periodMode === "quarter" || periodMode === "semester") {
-    const months = periodMode === "quarter" ? 3 : 6;
-    const endIdx = cursor.year * 12 + cursor.month + months - 1;
-    const endMonth = ((endIdx % 12) + 12) % 12;
-    return `${MESI[cursor.month].slice(0, 3)}–${MESI[endMonth].slice(0, 3)} ${cursor.year}`;
-  }
-  if (periodMode === "year") {
-    const startIdx = cursor.year * 12 + cursor.month - 11;
+  if (periodMode === "quarter" || periodMode === "semester" || periodMode === "year") {
+    const months = periodMode === "quarter" ? 3 : periodMode === "semester" ? 6 : 12;
+    const startIdx = cursor.year * 12 + cursor.month - (months - 1);
     const startYear = Math.floor(startIdx / 12);
     const startMonth = ((startIdx % 12) + 12) % 12;
+    if (startYear === cursor.year) return `${MESI[startMonth].slice(0, 3)}–${MESI[cursor.month].slice(0, 3)} ${cursor.year}`;
     return `${MESI[startMonth].slice(0, 3)} ${startYear} – ${MESI[cursor.month].slice(0, 3)} ${cursor.year}`;
   }
   if (periodMode === "ytd") return `Gen – ${MESI[cursor.month].slice(0, 3)} ${cursor.year}`;
@@ -287,8 +283,8 @@ function MainApp({ session }) {
   const periodMonthKeys = useMemo(() => {
     const idx = cursor.year * 12 + cursor.month;
     if (periodMode === "month") return [monthKeyFromIdx(idx)];
-    if (periodMode === "quarter") return Array.from({ length: 3 }, (_, i) => monthKeyFromIdx(idx + i));
-    if (periodMode === "semester") return Array.from({ length: 6 }, (_, i) => monthKeyFromIdx(idx + i));
+    if (periodMode === "quarter") return Array.from({ length: 3 }, (_, i) => monthKeyFromIdx(idx - 2 + i));
+    if (periodMode === "semester") return Array.from({ length: 6 }, (_, i) => monthKeyFromIdx(idx - 5 + i));
     if (periodMode === "year") return Array.from({ length: 12 }, (_, i) => monthKeyFromIdx(idx - 11 + i));
     if (periodMode === "ytd") return Array.from({ length: cursor.month + 1 }, (_, i) => monthKeyFromIdx(cursor.year * 12 + i));
     return [];
@@ -324,9 +320,8 @@ function MainApp({ session }) {
   const resetFilters = () => setFilters({ dateFrom: "", dateTo: "", category: "Tutte", amountMode: "any", amountMin: "", amountMax: "" });
 
   const goPeriod = (delta) => {
-    const navStep = PERIODS.find((p) => p.id === periodMode).navStep;
     setCursor((c) => {
-      const idx = c.year * 12 + c.month + delta * navStep;
+      const idx = c.year * 12 + c.month + delta;
       const year = Math.floor(idx / 12);
       const month = ((idx % 12) + 12) % 12;
       return { year, month };
@@ -336,16 +331,6 @@ function MainApp({ session }) {
   const changePeriod = (id) => {
     if (id === "month") {
       setCursor(lastMonthCursor || cursor);
-      setPeriodMode("month");
-      return;
-    }
-    if (id === "quarter" || id === "semester") {
-      const months = id === "quarter" ? 3 : 6;
-      setCursor((c) => {
-        const idx = c.year * 12 + c.month;
-        const start = Math.floor(idx / months) * months;
-        return { year: Math.floor(start / 12), month: ((start % 12) + 12) % 12 };
-      });
     }
     setPeriodMode(id);
   };
