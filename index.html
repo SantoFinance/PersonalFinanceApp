@@ -98,17 +98,20 @@ function monthKeyFromIdx(idx) {
   const m = ((idx % 12) + 12) % 12;
   return `${y}-${String(m + 1).padStart(2, "0")}`;
 }
+function yy(year) {
+  return String(year).slice(-2);
+}
 function periodLabel(periodMode, cursor) {
-  if (periodMode === "month") return `${MESI[cursor.month]} ${cursor.year}`;
+  if (periodMode === "month") return `${MESI[cursor.month]} '${yy(cursor.year)}`;
   if (periodMode === "quarter" || periodMode === "semester" || periodMode === "year") {
     const months = periodMode === "quarter" ? 3 : periodMode === "semester" ? 6 : 12;
     const startIdx = cursor.year * 12 + cursor.month - (months - 1);
     const startYear = Math.floor(startIdx / 12);
     const startMonth = ((startIdx % 12) + 12) % 12;
-    if (startYear === cursor.year) return `${MESI[startMonth].slice(0, 3)}–${MESI[cursor.month].slice(0, 3)} ${cursor.year}`;
-    return `${MESI[startMonth].slice(0, 3)} ${startYear} – ${MESI[cursor.month].slice(0, 3)} ${cursor.year}`;
+    if (startYear === cursor.year) return `${MESI[startMonth].slice(0, 3)}–${MESI[cursor.month].slice(0, 3)} '${yy(cursor.year)}`;
+    return `${MESI[startMonth].slice(0, 3)} '${yy(startYear)}–${MESI[cursor.month].slice(0, 3)} '${yy(cursor.year)}`;
   }
-  if (periodMode === "ytd") return `Gen – ${MESI[cursor.month].slice(0, 3)} ${cursor.year}`;
+  if (periodMode === "ytd") return `Gen–${MESI[cursor.month].slice(0, 3)} '${yy(cursor.year)}`;
 }
 
 function fmtEUR(n) {
@@ -559,9 +562,9 @@ function MainApp({ session, onBack }) {
         {view === "home" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-              <button onClick={() => goPeriod(-1)} aria-label="Periodo precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545" }}><ChevronLeft size={32} /></button>
-              <div style={{ fontSize: 28, letterSpacing: "0.01em", color: "#0B2545", fontWeight: 700 }}>{periodLabel(periodMode, cursor)}</div>
-              <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545" }}><ChevronRight size={32} /></button>
+              <button onClick={() => goPeriod(-1)} aria-label="Periodo precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545", flexShrink: 0 }}><ChevronLeft size={32} /></button>
+              <div style={{ fontSize: "clamp(18px, 6vw, 28px)", letterSpacing: "0.01em", color: "#0B2545", fontWeight: 700, whiteSpace: "nowrap", flex: 1, minWidth: 0, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis" }}>{periodLabel(periodMode, cursor)}</div>
+              <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545", flexShrink: 0 }}><ChevronRight size={32} /></button>
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexShrink: 0 }}>
               {PERIODS.map((p) => (
