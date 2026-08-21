@@ -287,6 +287,8 @@ function MainApp({ session, onBack }) {
   const [filters, setFilters] = useState({ dateFrom: "", dateTo: "", category: "Tutte", amountMode: "any", amountMin: "", amountMax: "" });
   const [periodMode, setPeriodMode] = useState("month");
   const [lastMonthCursor, setLastMonthCursor] = useState(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({ category: "", amount: "", date: "", note: "" });
   const [editError, setEditError] = useState("");
@@ -597,7 +599,7 @@ function MainApp({ session, onBack }) {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 15, marginBottom: 4 }}>
                         <span>{c.label}</span>
                         <span style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-                          <span className="mono" style={{ fontSize: 12, color: "#B7C9DC", width: 32, textAlign: "right" }}>{val > 0 ? `${pctOfTotal}%` : ""}</span>
+                          <span className="mono" style={{ fontSize: 15, fontWeight: 600, color: "#5B7B9B", width: 40, textAlign: "right" }}>{val > 0 ? `${pctOfTotal}%` : ""}</span>
                           <span className="mono" style={{ fontSize: 16, fontWeight: 600, color: val > 0 ? "#0B2545" : "#B7C9DC" }}>{fmtEUR(val)}</span>
                         </span>
                       </div>
