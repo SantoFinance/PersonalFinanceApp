@@ -505,9 +505,9 @@ function MainApp({ session }) {
         {view === "home" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-              <button onClick={() => goPeriod(-1)} aria-label="Periodo precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B" }}><ChevronLeft size={18} /></button>
-              <div style={{ fontSize: 11.5, letterSpacing: "0.12em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600 }}>{periodLabel(periodMode, cursor)}</div>
-              <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B" }}><ChevronRight size={18} /></button>
+              <button onClick={() => goPeriod(-1)} aria-label="Periodo precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545" }}><ChevronLeft size={26} /></button>
+              <div style={{ fontSize: 16.5, letterSpacing: "0.04em", color: "#0B2545", fontWeight: 700 }}>{periodLabel(periodMode, cursor)}</div>
+              <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545" }}><ChevronRight size={26} /></button>
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexShrink: 0 }}>
               {PERIODS.map((p) => (
