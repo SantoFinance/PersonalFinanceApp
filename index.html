@@ -563,10 +563,33 @@ function MainApp({ session, onBack }) {
       <div style={{ maxWidth: 560, width: "100%", margin: "0 auto", padding: "14px 20px", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
         {view === "home" ? (
           <>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
               <button onClick={() => goPeriod(-1)} aria-label="Periodo precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545", flexShrink: 0 }}><ChevronLeft size={32} /></button>
-              <div style={{ fontSize: "clamp(18px, 6vw, 28px)", letterSpacing: "0.01em", color: "#0B2545", fontWeight: 700, whiteSpace: "nowrap", flex: 1, minWidth: 0, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis" }}>{periodLabel(periodMode, cursor)}</div>
+              <div onClick={() => { setPickerYear(cursor.year); setDatePickerOpen(true); }} style={{ fontSize: "clamp(18px, 6vw, 28px)", letterSpacing: "0.01em", color: "#0B2545", fontWeight: 700, whiteSpace: "nowrap", flex: 1, minWidth: 0, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer" }}>{periodLabel(periodMode, cursor)}</div>
               <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545", flexShrink: 0 }}><ChevronRight size={32} /></button>
+
+              {datePickerOpen && (
+                <>
+                  <div onClick={() => setDatePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
+                  <div className="fade-in" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: 6, background: "#FFFFFF", border: "1px solid #DCE9F5", borderRadius: 12, boxShadow: "0 12px 28px rgba(11,37,69,0.16)", padding: 14, zIndex: 40, width: 260 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                      <button onClick={() => setPickerYear((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B" }}><ChevronLeft size={18} /></button>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "#0B2545" }}>{pickerYear}</div>
+                      <button onClick={() => setPickerYear((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B" }}><ChevronRight size={18} /></button>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                      {MESI.map((m, i) => {
+                        const isSelected = pickerYear === cursor.year && i === cursor.month;
+                        return (
+                          <button key={m} onClick={() => { setCursor({ year: pickerYear, month: i }); setDatePickerOpen(false); }} style={{ padding: "9px 0", borderRadius: 8, border: isSelected ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: isSelected ? "#2F6FED" : "#FFFFFF", color: isSelected ? "#FFFFFF" : "#0B2545", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                            {m.slice(0, 3)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexShrink: 0 }}>
               {PERIODS.map((p) => (
