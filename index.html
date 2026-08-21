@@ -269,11 +269,19 @@ function MainApp({ session, onBack }) {
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+  const [accounts, setAccounts] = useState([]);
+  const [accountsLoaded, setAccountsLoaded] = useState(false);
+  const [activeAccountId, setActiveAccountId] = useState("all");
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [newAccountName, setNewAccountName] = useState("");
+  const [accError, setAccError] = useState("");
+  const [accBusy, setAccBusy] = useState(false);
+  const [accRemovalTarget, setAccRemovalTarget] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState("idle");
   const [lastErrorMsg, setLastErrorMsg] = useState("");
   const [cursor, setCursor] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
-  const [form, setForm] = useState({ category: "Altro", amount: "", date: todayISO(), note: "" });
+  const [form, setForm] = useState({ category: "Altro", account_id: "", amount: "", date: todayISO(), note: "" });
   const [error, setError] = useState("");
   const [view, setView] = useState("home");
   const [showFilters, setShowFilters] = useState(false);
@@ -290,7 +298,7 @@ function MainApp({ session, onBack }) {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const [editingId, setEditingId] = useState(null);
-  const [editForm, setEditForm] = useState({ category: "", amount: "", date: "", note: "" });
+  const [editForm, setEditForm] = useState({ category: "", account_id: "", amount: "", date: "", note: "" });
   const [editError, setEditError] = useState("");
   const [editDeleteConfirm, setEditDeleteConfirm] = useState(false);
 
@@ -303,11 +311,18 @@ function MainApp({ session, onBack }) {
     }
   }, [categoriesLoaded, activeCategories]);
 
+  useEffect(() => {
+    if (accountsLoaded && accounts.length > 0 && !accounts.some((a) => a.id === form.account_id)) {
+      const preferred = activeAccountId !== "all" && accounts.some((a) => a.id === activeAccountId) ? activeAccountId : accounts[0].id;
+      setForm((f) => ({ ...f, account_id: preferred }));
+    }
+  }, [accountsLoaded, accounts, activeAccountId]);
+
 
   useEffect(() => {
     (async () => {
       const { data: exp, error: expErr } = await supabase.from("expenses").select("*").order("date", { ascending: false });
-      const expList = (!expErr && exp) ? exp.map((e) => ({ id: e.id, category: e.category, amount: Number(e.amount), date: e.date, note: e.note || "" })) : [];
+      const expList = (!expErr && exp) ? exp.map((e) => ({ id: e.id, category: e.category, account_id: e.account_id, amount: Number(e.amount), date: e.date, note: e.note || "" })) : [];
       setExpenses(expList);
 
       let { data: cats, error: catErr } = await supabase.from("categories").select("*").order("created_at", { ascending: true });
@@ -335,6 +350,12 @@ function MainApp({ session, onBack }) {
       }
       setCategories(cats || []);
       setCategoriesLoaded(true);
+
+      let { data: accs, error: accErr } = await supabase.from("accounts").select("*").order("created_at", { ascending: true });
+      if (accErr) accs = [];
+      setAccounts(accs || []);
+      setAccountsLoaded(true);
+
       setLoaded(true);
     })();
   }, []);
@@ -352,7 +373,7 @@ function MainApp({ session, onBack }) {
     if (periodMode === "ytd") return Array.from({ length: cursor.month + 1 }, (_, i) => monthKeyFromIdx(cursor.year * 12 + i));
     return [];
   }, [cursor, periodMode]);
-  const periodExpenses = useMemo(() => expenses.filter((e) => periodMonthKeys.includes(monthKey(e.date))).sort((a, b) => new Date(b.date) - new Date(a.date)), [expenses, periodMonthKeys]);
+  const periodExpenses = useMemo(() => expenses.filter((e) => periodMonthKeys.includes(monthKey(e.date)) && (activeAccountId === "all" || e.account_id === activeAccountId)).sort((a, b) => new Date(b.date) - new Date(a.date)), [expenses, periodMonthKeys, activeAccountId]);
   const byCategory = useMemo(() => {
     const map = {};
     CATEGORIES.forEach((c) => (map[c.id] = 0));
@@ -368,6 +389,7 @@ function MainApp({ session, onBack }) {
       if (filters.dateFrom && e.date < filters.dateFrom) return false;
       if (filters.dateTo && e.date > filters.dateTo) return false;
       if (filters.category !== "Tutte" && e.category !== filters.category) return false;
+      if (activeAccountId !== "all" && e.account_id !== activeAccountId) return false;
       const min = parseFloat(String(filters.amountMin).replace(",", "."));
       const max = parseFloat(String(filters.amountMax).replace(",", "."));
       if (filters.amountMode === "lt" && !isNaN(min) && !(e.amount < min)) return false;
@@ -378,7 +400,7 @@ function MainApp({ session, onBack }) {
       }
       return true;
     }).sort((a, b) => new Date(b.date) - new Date(a.date));
-  }, [expenses, filters]);
+  }, [expenses, filters, activeAccountId]);
   const filteredTotal = useMemo(() => filteredExpenses.reduce((s, e) => s + Number(e.amount), 0), [filteredExpenses]);
   const resetFilters = () => setFilters({ dateFrom: "", dateTo: "", category: "Tutte", amountMode: "any", amountMin: "", amountMax: "" });
 
@@ -403,11 +425,12 @@ function MainApp({ session, onBack }) {
     const amt = parseFloat(String(form.amount).replace(",", "."));
     if (!amt || amt <= 0) { setError("Inserisci un importo valido."); return; }
     if (!form.date) { setError("Inserisci una data."); return; }
+    if (!form.account_id) { setError("Seleziona un conto."); return; }
     setError("");
     setSaveState("saving");
-    const { data, error: insErr } = await supabase.from("expenses").insert({ user_id: userId, category: form.category, amount: amt, date: form.date, note: form.note.trim() }).select().single();
+    const { data, error: insErr } = await supabase.from("expenses").insert({ user_id: userId, category: form.category, account_id: form.account_id, amount: amt, date: form.date, note: form.note.trim() }).select().single();
     if (insErr) { setSaveState("error"); setLastErrorMsg(insErr.message); return; }
-    setExpenses((prev) => [{ id: data.id, category: data.category, amount: Number(data.amount), date: data.date, note: data.note || "" }, ...prev]);
+    setExpenses((prev) => [{ id: data.id, category: data.category, account_id: data.account_id, amount: Number(data.amount), date: data.date, note: data.note || "" }, ...prev]);
     setSaveState("saved");
     setForm({ ...form, amount: "", note: "" });
     setView("home");
@@ -422,7 +445,7 @@ function MainApp({ session, onBack }) {
 
   const openEdit = (exp) => {
     setEditingId(exp.id);
-    setEditForm({ category: exp.category, amount: String(exp.amount).replace(".", ","), date: exp.date, note: exp.note || "" });
+    setEditForm({ category: exp.category, account_id: exp.account_id, amount: String(exp.amount).replace(".", ","), date: exp.date, note: exp.note || "" });
     setEditError(""); setEditDeleteConfirm(false);
     setView("editExpense");
   };
@@ -432,9 +455,9 @@ function MainApp({ session, onBack }) {
     if (!amt || amt <= 0) { setEditError("Inserisci un importo valido."); return; }
     if (!editForm.date) { setEditError("Inserisci una data."); return; }
     setEditError("");
-    const { data, error: updErr } = await supabase.from("expenses").update({ category: editForm.category, amount: amt, date: editForm.date, note: editForm.note.trim() }).eq("id", editingId).select().single();
+    const { data, error: updErr } = await supabase.from("expenses").update({ category: editForm.category, account_id: editForm.account_id, amount: amt, date: editForm.date, note: editForm.note.trim() }).eq("id", editingId).select().single();
     if (updErr) { setEditError(updErr.message); return; }
-    setExpenses((prev) => prev.map((e) => (e.id === editingId ? { id: data.id, category: data.category, amount: Number(data.amount), date: data.date, note: data.note || "" } : e)));
+    setExpenses((prev) => prev.map((e) => (e.id === editingId ? { id: data.id, category: data.category, account_id: data.account_id, amount: Number(data.amount), date: data.date, note: data.note || "" } : e)));
     setEditingId(null);
     setView("list");
   };
@@ -505,11 +528,40 @@ function MainApp({ session, onBack }) {
     cancelRemoval();
   };
 
+  const addAccount = async () => {
+    if (accBusy) return;
+    const name = newAccountName.trim();
+    if (!name) { setAccError("Inserisci un nome."); return; }
+    const existsActive = accounts.some((a) => a.name.toLowerCase() === name.toLowerCase());
+    if (existsActive) { setAccError("Hai già un conto con questo nome."); return; }
+    setAccBusy(true);
+    const { data, error: insErr } = await supabase.from("accounts").insert({ user_id: userId, name }).select().single();
+    setAccBusy(false);
+    if (insErr) { setAccError(insErr.message); return; }
+    setAccounts((prev) => [...prev, data]);
+    setNewAccountName(""); setAccError(""); setAddingAccount(false);
+  };
+
+  const requestAccountRemoval = (acc) => setAccRemovalTarget(acc);
+  const cancelAccountRemoval = () => setAccRemovalTarget(null);
+
+  const deleteAccount = async () => {
+    const acc = accRemovalTarget;
+    const { error: delErr } = await supabase.from("accounts").delete().eq("id", acc.id);
+    if (!delErr) {
+      setAccounts((prev) => prev.filter((a) => a.id !== acc.id));
+      setExpenses((prev) => prev.filter((e) => e.account_id !== acc.id));
+      if (activeAccountId === acc.id) setActiveAccountId("all");
+    } else { setSaveState("error"); setLastErrorMsg(delErr.message); }
+    cancelAccountRemoval();
+  };
+
   const exportCSV = (scope) => {
     const rows = scope === "filtered" ? filteredExpenses : [...expenses].sort((a, b) => new Date(a.date) - new Date(b.date));
     if (rows.length === 0) return;
-    const header = "Data,Categoria,Importo,Nota";
-    const lines = rows.map((e) => `${e.date},${e.category},${e.amount.toFixed(2)},"${(e.note || "").replace(/"/g, '""')}"`);
+    const header = "Data,Categoria,Conto,Importo,Nota";
+    const accName = (id) => (accounts.find((a) => a.id === id) || {}).name || "";
+    const lines = rows.map((e) => `${e.date},${e.category},${accName(e.account_id)},${e.amount.toFixed(2)},"${(e.note || "").replace(/"/g, '""')}"`);
     const csv = [header, ...lines].join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -522,7 +574,7 @@ function MainApp({ session, onBack }) {
 
   const signOut = () => supabase.auth.signOut();
 
-  if (!loaded || !categoriesLoaded) {
+  if (!loaded || !categoriesLoaded || !accountsLoaded) {
     return (
       <div style={{ height: "100dvh", width: "100%", background: "#FFFFFF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
         <div className="spinner" style={{ width: 30, height: 30, borderRadius: "50%", border: "3px solid #DCE9F5", borderTopColor: "#2F6FED" }} />
@@ -549,6 +601,9 @@ function MainApp({ session, onBack }) {
           <>
             <div onClick={() => setMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 29 }} />
             <div className="fade-in" style={{ position: "absolute", top: 52, right: 12, background: "#FFFFFF", border: "1px solid #DCE9F5", borderRadius: 10, boxShadow: "0 8px 24px rgba(11,37,69,0.14)", minWidth: 200, overflow: "hidden", zIndex: 31 }}>
+              <button onClick={() => { setMenuOpen(false); setAccError(""); setAddingAccount(false); setView("accounts"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#0B2545", textAlign: "left", borderBottom: "1px solid #EFF5FB" }}>
+                <Landmark size={15} color="#5B7B9B" /> Gestisci conti
+              </button>
               <button onClick={() => { setMenuOpen(false); setCatError(""); setAddingCustom(false); setView("categories"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "#0B2545", textAlign: "left", borderBottom: "1px solid #EFF5FB" }}>
                 <Tag size={15} color="#5B7B9B" /> Gestisci categorie
               </button>
@@ -563,7 +618,26 @@ function MainApp({ session, onBack }) {
       <div style={{ maxWidth: 560, width: "100%", margin: "0 auto", padding: "14px 20px", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
         {view === "home" ? (
           <>
-            <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+            {accountsLoaded && accounts.length === 0 ? (
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "20px 10px" }}>
+                <Landmark size={38} color="#B7C9DC" style={{ marginBottom: 14 }} />
+                <div style={{ fontSize: 16, fontWeight: 600, color: "#0B2545", marginBottom: 6 }}>Crea il tuo primo conto</div>
+                <div style={{ fontSize: 13.5, color: "#5B7B9B", marginBottom: 18, maxWidth: 260 }}>Le spese vengono tracciate per conto corrente: puoi tenerle separate o vederle tutte insieme.</div>
+                <button onClick={() => { setAccError(""); setAddingAccount(true); setView("accounts"); }} style={{ padding: "11px 22px", borderRadius: 8, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                  Crea conto
+                </button>
+              </div>
+            ) : (
+              <>
+                {accounts.length > 0 && (
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10, flexShrink: 0, overflowX: "auto" }}>
+                    <button onClick={() => setActiveAccountId("all")} style={{ padding: "6px 12px", borderRadius: 999, border: activeAccountId === "all" ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: activeAccountId === "all" ? "#2F6FED" : "#FFFFFF", color: activeAccountId === "all" ? "#FFFFFF" : "#5B7B9B", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>Totale</button>
+                    {accounts.map((a) => (
+                      <button key={a.id} onClick={() => setActiveAccountId(a.id)} style={{ padding: "6px 12px", borderRadius: 999, border: activeAccountId === a.id ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: activeAccountId === a.id ? "#2F6FED" : "#FFFFFF", color: activeAccountId === a.id ? "#FFFFFF" : "#5B7B9B", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>{a.name}</button>
+                    ))}
+                  </div>
+                )}
+                <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
               <button onClick={() => goPeriod(-1)} aria-label="Periodo precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545", flexShrink: 0 }}><ChevronLeft size={32} /></button>
               <div onClick={() => { setPickerYear(cursor.year); setDatePickerOpen(true); }} style={{ fontSize: "clamp(18px, 6vw, 28px)", letterSpacing: "0.01em", color: "#0B2545", fontWeight: 700, whiteSpace: "nowrap", flex: 1, minWidth: 0, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer" }}>{periodLabel(periodMode, cursor)}</div>
               <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545", flexShrink: 0 }}><ChevronRight size={32} /></button>
@@ -648,6 +722,8 @@ function MainApp({ session, onBack }) {
             <div style={{ textAlign: "center", fontSize: 10.5, color: saveState === "error" ? "#B4483A" : "#B7C9DC", marginTop: 6, flexShrink: 0 }}>
               {loaded ? (saveState === "saving" ? "Salvataggio…" : saveState === "error" ? `Errore: ${lastErrorMsg}` : "Dati sincronizzati") : "Caricamento…"}
             </div>
+              </>
+            )}
           </>
         ) : view === "add" ? (
           <>
@@ -664,6 +740,18 @@ function MainApp({ session, onBack }) {
                   </button>
                 ))}
               </div>
+              {accounts.length > 1 && (
+                <>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 10 }}>Conto</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+                    {accounts.map((a) => (
+                      <button type="button" key={a.id} className="chip" onClick={() => setForm({ ...form, account_id: a.id })} style={{ fontSize: 14, padding: "8px 14px", borderRadius: 999, border: form.account_id === a.id ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: form.account_id === a.id ? "#2F6FED" : "#FFFFFF", color: form.account_id === a.id ? "#FFFFFF" : "#0B2545", cursor: "pointer" }}>
+                        {a.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
               <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Importo</div>
               <input type="text" inputMode="decimal" placeholder="0,00 €" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="mono" autoFocus style={{ width: "95%", margin: "0 auto 20px", display: "block", padding: "14px 14px", borderRadius: 10, border: "1px solid #DCE9F5", fontSize: 24, fontWeight: 600 }} />
               <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
@@ -696,6 +784,18 @@ function MainApp({ session, onBack }) {
                   </button>
                 ))}
               </div>
+              {accounts.length > 1 && (
+                <>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 10 }}>Conto</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
+                    {accounts.map((a) => (
+                      <button type="button" key={a.id} className="chip" onClick={() => setEditForm({ ...editForm, account_id: a.id })} style={{ fontSize: 14, padding: "8px 14px", borderRadius: 999, border: editForm.account_id === a.id ? "1px solid #2F6FED" : "1px solid #DCE9F5", background: editForm.account_id === a.id ? "#2F6FED" : "#FFFFFF", color: editForm.account_id === a.id ? "#FFFFFF" : "#0B2545", cursor: "pointer" }}>
+                        {a.name}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
               <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Importo</div>
               <input type="text" inputMode="decimal" placeholder="0,00 €" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="mono" style={{ width: "95%", margin: "0 auto 20px", display: "block", padding: "14px 14px", borderRadius: 10, border: "1px solid #DCE9F5", fontSize: 24, fontWeight: 600 }} />
               <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
@@ -725,6 +825,59 @@ function MainApp({ session, onBack }) {
                 </button>
               )}
             </div>
+          </>
+        ) : view === "accounts" ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              <button onClick={() => setView("home")} aria-label="Torna indietro" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#5B7B9B", display: "flex", alignItems: "center" }}><ArrowLeft size={18} /></button>
+              <div style={{ fontSize: 15, fontWeight: 600, flex: 1 }}>Gestisci conti</div>
+            </div>
+            <div className="scrollbar-thin" style={{ marginTop: 14, flex: 1, minHeight: 0, overflowY: "auto" }}>
+              <div style={{ fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>I tuoi conti</div>
+              {accounts.length > 0 ? accounts.map((a) => (
+                <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 4px", borderBottom: "1px dotted #DCE9F5" }}>
+                  <Landmark size={17} color="#5B7B9B" style={{ flexShrink: 0 }} />
+                  <div style={{ flex: 1, fontSize: 15 }}>{a.name}</div>
+                  <button onClick={() => requestAccountRemoval(a)} aria-label="Rimuovi" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "#B7C9DC", flexShrink: 0 }}><Trash2 size={15} /></button>
+                </div>
+              )) : (
+                <div style={{ fontSize: 13, color: "#B7C9DC", padding: "6px 4px" }}>Nessun conto ancora.</div>
+              )}
+
+              {addingAccount ? (
+                <div className="fade-in" style={{ marginTop: 16, padding: 12, background: "#F3F8FD", borderRadius: 10, border: "1px solid #DCE9F5" }}>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome</div>
+                  <input type="text" placeholder="Es. Conto principale" value={newAccountName} onChange={(e) => { setNewAccountName(e.target.value); setAccError(""); }} autoFocus style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
+                  {accError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{accError}</div>}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    {accounts.length > 0 && (
+                      <button onClick={() => { setAddingAccount(false); setNewAccountName(""); setAccError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
+                    )}
+                    <button onClick={addAccount} disabled={accBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: accBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: accBusy ? "default" : "pointer" }}>Crea conto</button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => setAddingAccount(true)} style={{ marginTop: 16, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 0", borderRadius: 8, border: "1px dashed #2F6FED", background: "#FFFFFF", color: "#2F6FED", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                  <Plus size={16} /> Crea conto
+                </button>
+              )}
+            </div>
+
+            {accRemovalTarget && (
+              <>
+                <div onClick={cancelAccountRemoval} style={{ position: "fixed", inset: 0, background: "rgba(11,37,69,0.35)", zIndex: 39 }} />
+                <div className="fade-in" style={{ position: "fixed", left: 20, right: 20, bottom: 24, maxWidth: 520, margin: "0 auto", background: "#FFFFFF", borderRadius: 14, padding: 18, boxShadow: "0 12px 32px rgba(11,37,69,0.22)", zIndex: 40 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Eliminare "{accRemovalTarget.name}"?</div>
+                  <div style={{ fontSize: 13, color: "#5B7B9B", marginBottom: 16 }}>Verranno eliminate anche tutte le spese registrate su questo conto. L'operazione non è reversibile.</div>
+                  <button onClick={deleteAccount} style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "1px solid #B4483A", background: "#FFFFFF", color: "#B4483A", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 8 }}>
+                    Sì, elimina conto e spese
+                  </button>
+                  <button onClick={cancelAccountRemoval} style={{ width: "100%", padding: "11px 0", borderRadius: 8, border: "none", background: "#F3F8FD", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>
+                    Annulla
+                  </button>
+                </div>
+              </>
+            )}
           </>
         ) : view === "categories" ? (
           <>
