@@ -48,6 +48,7 @@ import {
   ArrowLeft, X, SlidersHorizontal, Menu, Check, Landmark, Heart, Stethoscope,
   PawPrint, Dumbbell, GraduationCap, Wrench, Smartphone, Coffee, Music,
   Gamepad2, Baby, Wifi, CreditCard, Briefcase, Tag, LogOut, Mail, Lock,
+  Wallet, TrendingUp,
 } from "https://esm.sh/lucide-react@0.383.0?deps=react@18";
 
 // ==== Configurazione Supabase ====
@@ -121,6 +122,7 @@ function todayISO() {
 
 function App() {
   const [session, setSession] = useState(undefined);
+  const [section, setSection] = useState("hub");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -130,7 +132,45 @@ function App() {
 
   if (session === undefined) return <SplashOnly />;
   if (!session) return <AuthScreen />;
-  return <MainApp session={session} />;
+  if (section === "expenses") return <MainApp session={session} onBack={() => setSection("hub")} />;
+  return <Hub onSelect={setSection} />;
+}
+
+function Hub({ onSelect }) {
+  return (
+    <div style={{ height: "100dvh", width: "100%", background: "#FFFFFF", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 24px" }}>
+      <div className="splash-ring" style={{ width: 46, height: 46, borderRadius: "50%", border: "1.5px solid #2F6FED", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+        <span className="mono" style={{ fontSize: 20, fontWeight: 600, color: "#2F6FED" }}>€</span>
+      </div>
+      <div style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 2 }}>Personal Finance</div>
+      <div style={{ fontSize: 25, fontWeight: 700, color: "#0B2545", letterSpacing: "-0.01em", marginBottom: 40 }}>Tracker</div>
+
+      <button onClick={() => onSelect("expenses")} style={{ width: "100%", maxWidth: 360, display: "flex", alignItems: "center", gap: 14, padding: "18px 18px", borderRadius: 14, border: "1px solid #DCE9F5", background: "#FFFFFF", cursor: "pointer", marginBottom: 12, textAlign: "left" }}>
+        <div style={{ width: 42, height: 42, borderRadius: 10, background: "#EFF5FB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <Wallet size={20} color="#2F6FED" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "#0B2545" }}>Le mie spese</div>
+          <div style={{ fontSize: 12.5, color: "#5B7B9B", marginTop: 1 }}>Traccia e analizza le tue uscite</div>
+        </div>
+        <ChevronRight size={18} color="#B7C9DC" />
+      </button>
+
+      <button onClick={() => {}} style={{ width: "100%", maxWidth: 360, display: "flex", alignItems: "center", gap: 14, padding: "18px 18px", borderRadius: 14, border: "1px solid #DCE9F5", background: "#FFFFFF", cursor: "default", opacity: 0.55, textAlign: "left" }}>
+        <div style={{ width: 42, height: 42, borderRadius: 10, background: "#EFF5FB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <TrendingUp size={20} color="#2F6FED" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: "#0B2545" }}>Portafoglio Investimenti</div>
+          <div style={{ fontSize: 12.5, color: "#5B7B9B", marginTop: 1 }}>Presto disponibile</div>
+        </div>
+      </button>
+
+      <button onClick={() => supabase.auth.signOut()} style={{ marginTop: 32, background: "none", border: "none", cursor: "pointer", fontSize: 13, color: "#B4483A", display: "flex", alignItems: "center", gap: 6 }}>
+        <LogOut size={14} /> Esci
+      </button>
+    </div>
+  );
 }
 
 function SplashOnly() {
@@ -201,7 +241,7 @@ function AuthScreen() {
   );
 }
 
-function MainApp({ session }) {
+function MainApp({ session, onBack }) {
   const userId = session.user.id;
   const [splashVisible, setSplashVisible] = useState(true);
   const [expenses, setExpenses] = useState([]);
@@ -480,8 +520,13 @@ function MainApp({ session }) {
       )}
 
       <div style={{ position: "relative", flexShrink: 0, zIndex: 30 }}>
-        <div style={{ height: 48, background: "#2F6FED", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px" }}>
-          <span style={{ color: "#FFFFFF", fontSize: 14, fontWeight: 600, letterSpacing: "-0.01em" }}>Personal Finance Tracker</span>
+        <div style={{ height: 48, background: "#2F6FED", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 8px 0 4px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <button onClick={onBack} aria-label="Torna alla home" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#FFFFFF", display: "flex", alignItems: "center" }}>
+              <ArrowLeft size={20} />
+            </button>
+            <span style={{ color: "#FFFFFF", fontSize: 14, fontWeight: 600, letterSpacing: "-0.01em" }}>Le mie spese</span>
+          </div>
           <button onClick={() => setMenuOpen((s) => !s)} aria-label="Apri menu" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#FFFFFF", display: "flex", alignItems: "center" }}>
             <Menu size={22} />
           </button>
@@ -505,9 +550,9 @@ function MainApp({ session }) {
         {view === "home" ? (
           <>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-              <button onClick={() => goPeriod(-1)} aria-label="Periodo precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545" }}><ChevronLeft size={26} /></button>
-              <div style={{ fontSize: 16.5, letterSpacing: "0.04em", color: "#0B2545", fontWeight: 700 }}>{periodLabel(periodMode, cursor)}</div>
-              <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545" }}><ChevronRight size={26} /></button>
+              <button onClick={() => goPeriod(-1)} aria-label="Periodo precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545" }}><ChevronLeft size={32} /></button>
+              <div style={{ fontSize: 28, letterSpacing: "0.01em", color: "#0B2545", fontWeight: 700 }}>{periodLabel(periodMode, cursor)}</div>
+              <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "#0B2545" }}><ChevronRight size={32} /></button>
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexShrink: 0 }}>
               {PERIODS.map((p) => (
