@@ -102,16 +102,16 @@ function yy(year) {
   return String(year).slice(-2);
 }
 function periodLabel(periodMode, cursor) {
-  if (periodMode === "month") return `${MESI[cursor.month]} '${yy(cursor.year)}`;
+  if (periodMode === "month") return `${MESI[cursor.month]} ${yy(cursor.year)}`;
   if (periodMode === "quarter" || periodMode === "semester" || periodMode === "year") {
     const months = periodMode === "quarter" ? 3 : periodMode === "semester" ? 6 : 12;
     const startIdx = cursor.year * 12 + cursor.month - (months - 1);
     const startYear = Math.floor(startIdx / 12);
     const startMonth = ((startIdx % 12) + 12) % 12;
-    if (startYear === cursor.year) return `${MESI[startMonth].slice(0, 3)}–${MESI[cursor.month].slice(0, 3)} '${yy(cursor.year)}`;
-    return `${MESI[startMonth].slice(0, 3)} '${yy(startYear)}–${MESI[cursor.month].slice(0, 3)} '${yy(cursor.year)}`;
+    if (startYear === cursor.year) return `${MESI[startMonth].slice(0, 3)}–${MESI[cursor.month].slice(0, 3)} ${yy(cursor.year)}`;
+    return `${MESI[startMonth].slice(0, 3)} ${yy(startYear)}–${MESI[cursor.month].slice(0, 3)} ${yy(cursor.year)}`;
   }
-  if (periodMode === "ytd") return `Gen–${MESI[cursor.month].slice(0, 3)} '${yy(cursor.year)}`;
+  if (periodMode === "ytd") return `Gen–${MESI[cursor.month].slice(0, 3)} ${yy(cursor.year)}`;
 }
 
 function fmtEUR(n) {
