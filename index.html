@@ -167,13 +167,7 @@ function Splash() {
 function Hub({ onSelect }) {
   return (
     <div style={{ height: "100dvh", width: "100%", background: "#FFFFFF", overflow: "hidden", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 24px" }}>
-      <div className="splash-ring" style={{ width: 46, height: 46, borderRadius: "50%", border: "1.5px solid #2F6FED", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
-        <span className="mono" style={{ fontSize: 20, fontWeight: 600, color: "#2F6FED" }}>€</span>
-      </div>
-      <div style={{ textAlign: "center", marginBottom: 40 }}>
-        <span style={{ fontFamily: "'Fredoka', 'Inter', sans-serif", fontSize: 27, fontWeight: 600, color: "#0B2545" }}>Cozy</span>
-        <span style={{ fontSize: 25, fontWeight: 700, color: "#0B2545", letterSpacing: "-0.01em", marginLeft: 6 }}>Tracker</span>
-      </div>
+      <img src={LOGO_SRC} alt="Cozy Tracker" style={{ width: 190, height: "auto", marginBottom: 40 }} />
 
       <button onClick={() => onSelect("expenses")} style={{ width: "100%", maxWidth: 360, display: "flex", alignItems: "center", gap: 14, padding: "18px 18px", borderRadius: 14, border: "1px solid #DCE9F5", background: "#FFFFFF", cursor: "pointer", marginBottom: 12, textAlign: "left" }}>
         <div style={{ width: 42, height: 42, borderRadius: 10, background: "#EFF5FB", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -234,13 +228,7 @@ function AuthScreen() {
     <div style={{ height: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "#FFFFFF", padding: 20 }}>
       <div className="fade-in" style={{ width: "100%", maxWidth: 360 }}>
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ width: 46, height: 46, borderRadius: "50%", border: "1.5px solid #2F6FED", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-            <span className="mono" style={{ fontSize: 20, fontWeight: 600, color: "#2F6FED" }}>€</span>
-          </div>
-          <div style={{ textAlign: "center" }}>
-            <span style={{ fontFamily: "'Fredoka', 'Inter', sans-serif", fontSize: 26, fontWeight: 600, color: "#0B2545" }}>Cozy</span>
-            <span style={{ fontSize: 24, fontWeight: 700, color: "#0B2545", marginLeft: 6 }}>Tracker</span>
-          </div>
+          <img src={LOGO_SRC} alt="Cozy Tracker" style={{ width: 180, height: "auto" }} />
         </div>
         <form onSubmit={submit}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #DCE9F5", borderRadius: 10, padding: "10px 12px", marginBottom: 10 }}>
