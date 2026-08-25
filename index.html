@@ -2421,25 +2421,30 @@ function InvestApp({ session, onBack }) {
               })}
             </div>
 
-            {addingPortfolio ? (
-              <div className="fade-in" style={{ marginTop: 12, padding: 12, background: "#F3F8FD", borderRadius: 10, border: "1px solid #DCE9F5", flexShrink: 0 }}>
-                <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome portafoglio</div>
-                <input type="text" placeholder="Es. Portafoglio ETF" value={newPortfolioName} onChange={(e) => { setNewPortfolioName(e.target.value); setPortfolioError(""); }} autoFocus style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
-                <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Icona</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
-                  {INVEST_ICON_CHOICES.map(({ key, icon: IconComp }) => (
-                    <button type="button" key={key} onClick={() => setNewPortfolioIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", border: newPortfolioIcon === key ? "1.5px solid #2F6FED" : "1px solid #DCE9F5", background: newPortfolioIcon === key ? "#EFF5FB" : "#FFFFFF" }}>
-                      <IconComp size={19} color={newPortfolioIcon === key ? "#2F6FED" : "#5B7B9B"} />
-                    </button>
-                  ))}
+            {addingPortfolio && (
+              <>
+                <div onClick={() => { setAddingPortfolio(false); setNewPortfolioName(""); setNewPortfolioIcon("Briefcase"); setPortfolioError(""); }} style={{ position: "fixed", inset: 0, background: "rgba(11,37,69,0.35)", zIndex: 39 }} />
+                <div className="fade-in scrollbar-thin" style={{ position: "fixed", left: 20, right: 20, bottom: 24, maxWidth: 520, margin: "0 auto", maxHeight: "75dvh", overflowY: "auto", background: "#FFFFFF", borderRadius: 14, padding: 18, boxShadow: "0 12px 32px rgba(11,37,69,0.22)", zIndex: 40 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>Nuovo portafoglio</div>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome portafoglio</div>
+                  <input type="text" placeholder="Es. Portafoglio ETF" value={newPortfolioName} onChange={(e) => { setNewPortfolioName(e.target.value); setPortfolioError(""); }} autoFocus style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
+                    {INVEST_ICON_CHOICES.map(({ key, icon: IconComp }) => (
+                      <button type="button" key={key} onClick={() => setNewPortfolioIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", border: newPortfolioIcon === key ? "1.5px solid #2F6FED" : "1px solid #DCE9F5", background: newPortfolioIcon === key ? "#EFF5FB" : "#FFFFFF" }}>
+                        <IconComp size={19} color={newPortfolioIcon === key ? "#2F6FED" : "#5B7B9B"} />
+                      </button>
+                    ))}
+                  </div>
+                  {portfolioError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{portfolioError}</div>}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setAddingPortfolio(false); setNewPortfolioName(""); setNewPortfolioIcon("Briefcase"); setPortfolioError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
+                    <button onClick={addPortfolio} disabled={portfolioBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: portfolioBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: portfolioBusy ? "default" : "pointer" }}>Crea</button>
+                  </div>
                 </div>
-                {portfolioError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{portfolioError}</div>}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setAddingPortfolio(false); setNewPortfolioName(""); setNewPortfolioIcon("Briefcase"); setPortfolioError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
-                  <button onClick={addPortfolio} disabled={portfolioBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: portfolioBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: portfolioBusy ? "default" : "pointer" }}>Crea</button>
-                </div>
-              </div>
-            ) : (
+              </>
+            )}
+            {!addingPortfolio && (
               <button onClick={() => setAddingPortfolio(true)} style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 0", borderRadius: 8, border: "1px dashed #2F6FED", background: "#FFFFFF", color: "#2F6FED", fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                 <Plus size={16} /> Nuovo portafoglio
               </button>
@@ -2564,17 +2569,22 @@ function InvestApp({ session, onBack }) {
               })}
             </div>
 
-            {addingHolding ? (
-              <div className="fade-in" style={{ marginTop: 12, padding: 12, background: "#F3F8FD", borderRadius: 10, border: "1px solid #DCE9F5", flexShrink: 0 }}>
-                <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome titolo</div>
-                <input type="text" placeholder="Es. iShares MSCI World Acc" value={newHoldingName} onChange={(e) => { setNewHoldingName(e.target.value); setHoldingError(""); }} autoFocus style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
-                {holdingError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{holdingError}</div>}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setAddingHolding(false); setNewHoldingName(""); setHoldingError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
-                  <button onClick={addHolding} disabled={holdingBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: holdingBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: holdingBusy ? "default" : "pointer" }}>Crea</button>
+            {addingHolding && (
+              <>
+                <div onClick={() => { setAddingHolding(false); setNewHoldingName(""); setHoldingError(""); }} style={{ position: "fixed", inset: 0, background: "rgba(11,37,69,0.35)", zIndex: 39 }} />
+                <div className="fade-in scrollbar-thin" style={{ position: "fixed", left: 20, right: 20, bottom: 24, maxWidth: 520, margin: "0 auto", maxHeight: "75dvh", overflowY: "auto", background: "#FFFFFF", borderRadius: 14, padding: 18, boxShadow: "0 12px 32px rgba(11,37,69,0.22)", zIndex: 40 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>Nuovo titolo</div>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome titolo</div>
+                  <input type="text" placeholder="Es. iShares MSCI World Acc" value={newHoldingName} onChange={(e) => { setNewHoldingName(e.target.value); setHoldingError(""); }} autoFocus style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
+                  {holdingError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{holdingError}</div>}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setAddingHolding(false); setNewHoldingName(""); setHoldingError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
+                    <button onClick={addHolding} disabled={holdingBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: holdingBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: holdingBusy ? "default" : "pointer" }}>Crea</button>
+                  </div>
                 </div>
-              </div>
-            ) : (
+              </>
+            )}
+            {!addingHolding && (
               <button onClick={() => setAddingHolding(true)} style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 0", borderRadius: 8, border: "1px dashed #2F6FED", background: "#FFFFFF", color: "#2F6FED", fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                 <Plus size={16} /> Nuovo titolo
               </button>
@@ -3097,25 +3107,30 @@ function InsuranceApp({ session, onBack }) {
               })}
             </div>
 
-            {addingPolicy ? (
-              <div className="fade-in" style={{ marginTop: 12, padding: 12, background: "#F3F8FD", borderRadius: 10, border: "1px solid #DCE9F5", flexShrink: 0 }}>
-                <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome polizza o fondo</div>
-                <input type="text" placeholder="Es. Fondo Pensione Aperto" value={newPolicyName} onChange={(e) => { setNewPolicyName(e.target.value); setPolicyError(""); }} autoFocus style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
-                <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Icona</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
-                  {INSURANCE_ICON_CHOICES.map(({ key, icon: IconComp }) => (
-                    <button type="button" key={key} onClick={() => setNewPolicyIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", border: newPolicyIcon === key ? "1.5px solid #2F6FED" : "1px solid #DCE9F5", background: newPolicyIcon === key ? "#EFF5FB" : "#FFFFFF" }}>
-                      <IconComp size={19} color={newPolicyIcon === key ? "#2F6FED" : "#5B7B9B"} />
-                    </button>
-                  ))}
+            {addingPolicy && (
+              <>
+                <div onClick={() => { setAddingPolicy(false); setNewPolicyName(""); setNewPolicyIcon("Shield"); setPolicyError(""); }} style={{ position: "fixed", inset: 0, background: "rgba(11,37,69,0.35)", zIndex: 39 }} />
+                <div className="fade-in scrollbar-thin" style={{ position: "fixed", left: 20, right: 20, bottom: 24, maxWidth: 520, margin: "0 auto", maxHeight: "75dvh", overflowY: "auto", background: "#FFFFFF", borderRadius: 14, padding: 18, boxShadow: "0 12px 32px rgba(11,37,69,0.22)", zIndex: 40 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>Nuova polizza o fondo</div>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome polizza o fondo</div>
+                  <input type="text" placeholder="Es. Fondo Pensione Aperto" value={newPolicyName} onChange={(e) => { setNewPolicyName(e.target.value); setPolicyError(""); }} autoFocus style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
+                    {INSURANCE_ICON_CHOICES.map(({ key, icon: IconComp }) => (
+                      <button type="button" key={key} onClick={() => setNewPolicyIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", border: newPolicyIcon === key ? "1.5px solid #2F6FED" : "1px solid #DCE9F5", background: newPolicyIcon === key ? "#EFF5FB" : "#FFFFFF" }}>
+                        <IconComp size={19} color={newPolicyIcon === key ? "#2F6FED" : "#5B7B9B"} />
+                      </button>
+                    ))}
+                  </div>
+                  {policyError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{policyError}</div>}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setAddingPolicy(false); setNewPolicyName(""); setNewPolicyIcon("Shield"); setPolicyError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
+                    <button onClick={addPolicy} disabled={policyBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: policyBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: policyBusy ? "default" : "pointer" }}>Crea</button>
+                  </div>
                 </div>
-                {policyError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{policyError}</div>}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setAddingPolicy(false); setNewPolicyName(""); setNewPolicyIcon("Shield"); setPolicyError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
-                  <button onClick={addPolicy} disabled={policyBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: policyBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: policyBusy ? "default" : "pointer" }}>Crea</button>
-                </div>
-              </div>
-            ) : (
+              </>
+            )}
+            {!addingPolicy && (
               <button onClick={() => setAddingPolicy(true)} style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 0", borderRadius: 8, border: "1px dashed #2F6FED", background: "#FFFFFF", color: "#2F6FED", fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                 <Plus size={16} /> Nuova polizza o fondo
               </button>
@@ -3560,25 +3575,30 @@ function RealEstateApp({ session, onBack }) {
               })}
             </div>
 
-            {addingProperty ? (
-              <div className="fade-in" style={{ marginTop: 12, padding: 12, background: "#F3F8FD", borderRadius: 10, border: "1px solid #DCE9F5", flexShrink: 0 }}>
-                <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome immobile</div>
-                <input type="text" placeholder="Es. Appartamento Milano" value={newPropertyName} onChange={(e) => { setNewPropertyName(e.target.value); setPropertyError(""); }} autoFocus style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
-                <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Icona</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
-                  {REALESTATE_ICON_CHOICES.map(({ key, icon: IconComp }) => (
-                    <button type="button" key={key} onClick={() => setNewPropertyIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", border: newPropertyIcon === key ? "1.5px solid #2F6FED" : "1px solid #DCE9F5", background: newPropertyIcon === key ? "#EFF5FB" : "#FFFFFF" }}>
-                      <IconComp size={19} color={newPropertyIcon === key ? "#2F6FED" : "#5B7B9B"} />
-                    </button>
-                  ))}
+            {addingProperty && (
+              <>
+                <div onClick={() => { setAddingProperty(false); setNewPropertyName(""); setNewPropertyIcon("Home"); setPropertyError(""); }} style={{ position: "fixed", inset: 0, background: "rgba(11,37,69,0.35)", zIndex: 39 }} />
+                <div className="fade-in scrollbar-thin" style={{ position: "fixed", left: 20, right: 20, bottom: 24, maxWidth: 520, margin: "0 auto", maxHeight: "75dvh", overflowY: "auto", background: "#FFFFFF", borderRadius: 14, padding: 18, boxShadow: "0 12px 32px rgba(11,37,69,0.22)", zIndex: 40 }}>
+                  <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>Nuovo immobile</div>
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nome immobile</div>
+                  <input type="text" placeholder="Es. Appartamento Milano" value={newPropertyName} onChange={(e) => { setNewPropertyName(e.target.value); setPropertyError(""); }} autoFocus style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", borderRadius: 9, border: "1px solid #DCE9F5", fontSize: 16, marginBottom: 14 }} />
+                  <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
+                    {REALESTATE_ICON_CHOICES.map(({ key, icon: IconComp }) => (
+                      <button type="button" key={key} onClick={() => setNewPropertyIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 10, cursor: "pointer", border: newPropertyIcon === key ? "1.5px solid #2F6FED" : "1px solid #DCE9F5", background: newPropertyIcon === key ? "#EFF5FB" : "#FFFFFF" }}>
+                        <IconComp size={19} color={newPropertyIcon === key ? "#2F6FED" : "#5B7B9B"} />
+                      </button>
+                    ))}
+                  </div>
+                  {propertyError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{propertyError}</div>}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => { setAddingProperty(false); setNewPropertyName(""); setNewPropertyIcon("Home"); setPropertyError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
+                    <button onClick={addProperty} disabled={propertyBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: propertyBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: propertyBusy ? "default" : "pointer" }}>Crea</button>
+                  </div>
                 </div>
-                {propertyError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{propertyError}</div>}
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setAddingProperty(false); setNewPropertyName(""); setNewPropertyIcon("Home"); setPropertyError(""); }} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #DCE9F5", background: "#FFFFFF", color: "#5B7B9B", fontSize: 14, cursor: "pointer" }}>Annulla</button>
-                  <button onClick={addProperty} disabled={propertyBusy} style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: propertyBusy ? "#7D93A8" : "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: propertyBusy ? "default" : "pointer" }}>Crea</button>
-                </div>
-              </div>
-            ) : (
+              </>
+            )}
+            {!addingProperty && (
               <button onClick={() => setAddingProperty(true)} style={{ marginTop: 12, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px 0", borderRadius: 8, border: "1px dashed #2F6FED", background: "#FFFFFF", color: "#2F6FED", fontSize: 14, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
                 <Plus size={16} /> Nuovo immobile
               </button>
