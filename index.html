@@ -1713,12 +1713,15 @@ function NetWorthApp({ session, onBack }) {
 
       <div style={{ maxWidth: 560, width: "100%", margin: "0 auto", padding: "14px 20px", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
         <div style={{ display: "flex", justifyContent: "center", padding: "0 0 10px", flexShrink: 0 }}>
-          <div style={{ display: "flex", background: "#F3F8FD", borderRadius: 10, padding: 3, width: "100%", maxWidth: 280 }}>
-            <button onClick={() => setDashboardView("list")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "list" ? "#FFFFFF" : "transparent", color: dashboardView === "list" ? "#2F6FED" : "#5B7B9B", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "list" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
+          <div style={{ display: "flex", background: "#F3F8FD", borderRadius: 10, padding: 3, width: "100%", maxWidth: 380 }}>
+            <button onClick={() => setDashboardView("list")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "list" ? "#FFFFFF" : "transparent", color: dashboardView === "list" ? "#2F6FED" : "#5B7B9B", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "list" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
               Elenco
             </button>
-            <button onClick={() => setDashboardView("chart")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "chart" ? "#FFFFFF" : "transparent", color: dashboardView === "chart" ? "#2F6FED" : "#5B7B9B", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "chart" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
+            <button onClick={() => setDashboardView("chart")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "chart" ? "#FFFFFF" : "transparent", color: dashboardView === "chart" ? "#2F6FED" : "#5B7B9B", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "chart" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
               Statistiche
+            </button>
+            <button onClick={() => setDashboardView("balance")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "balance" ? "#FFFFFF" : "transparent", color: dashboardView === "balance" ? "#2F6FED" : "#5B7B9B", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "balance" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
+              Bilancio
             </button>
           </div>
         </div>
@@ -1779,6 +1782,46 @@ function NetWorthApp({ session, onBack }) {
             hidePerformanceBox={true}
             emptyMessage=""
           />
+        ) : dashboardView === "balance" ? (
+          <div className="scrollbar-thin" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "10px 2px" }}>
+            <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 10 }}>Attivi</div>
+            {[
+              { label: "Liquidità", value: cashflowTotal },
+              { label: "Investimenti", value: investTotal },
+              { label: "Immobili", value: realEstateTotal },
+              { label: "Assicurazioni e Previdenza", value: insuranceTotal },
+            ].map((r) => (
+              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 4px", borderBottom: "1px dotted #DCE9F5" }}>
+                <span style={{ fontSize: 14.5, color: "#0B2545" }}>{r.label}</span>
+                <span className="mono" style={{ fontSize: 14.5, fontWeight: 600, color: "#0B2545" }}><Money>{fmtEUR(r.value)}</Money></span>
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 4px", marginTop: 2 }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: "#0B2545" }}>Totale Attivi</span>
+              <span className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "#0B2545" }}><Money>{fmtEUR(grandTotal)}</Money></span>
+            </div>
+
+            <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, margin: "22px 0 10px" }}>Passività</div>
+            {[
+              { label: "Mutuo", value: 0 },
+              { label: "Finanziamenti", value: 0 },
+              { label: "Debiti personali", value: 0 },
+            ].map((r) => (
+              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 4px", borderBottom: "1px dotted #DCE9F5" }}>
+                <span style={{ fontSize: 14.5, color: "#0B2545" }}>{r.label}</span>
+                <span className="mono" style={{ fontSize: 14.5, fontWeight: 600, color: "#B7C9DC" }}><Money>{fmtEUR(r.value)}</Money></span>
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 4px", marginTop: 2 }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: "#0B2545" }}>Totale Passività</span>
+              <span className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "#0B2545" }}><Money>{fmtEUR(0)}</Money></span>
+            </div>
+
+            <div style={{ marginTop: 22, padding: "16px 14px", borderRadius: 12, background: "#F3F8FD", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: "#0B2545" }}>Patrimonio netto</span>
+              <span className="mono" style={{ fontSize: 19, fontWeight: 700, color: "#0B2545" }}><Money>{fmtEUR(grandTotal - 0)}</Money></span>
+            </div>
+          </div>
         ) : (
         <div className="scrollbar-thin" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "10px 0" }}>
           {rows.map((r) => {
