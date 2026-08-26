@@ -197,6 +197,15 @@ function fmtMonthYear(m) {
   const [y, mo] = m.split("-").map(Number);
   return `${MESI[mo - 1].slice(0, 3)} ${String(y).slice(-2)}`;
 }
+function addMonthsToDate(dateStr, n) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const idx = y * 12 + (m - 1) + n;
+  const targetY = Math.floor(idx / 12);
+  const targetM = ((idx % 12) + 12) % 12;
+  const daysInTarget = new Date(targetY, targetM + 1, 0).getDate();
+  const targetD = Math.min(d, daysInTarget);
+  return `${targetY}-${String(targetM + 1).padStart(2, "0")}-${String(targetD).padStart(2, "0")}`;
+}
 
 function App() {
   const [session, setSession] = useState(undefined);
@@ -376,7 +385,7 @@ function MainApp({ session, onBack }) {
   const [saveState, setSaveState] = useState("idle");
   const [lastErrorMsg, setLastErrorMsg] = useState("");
   const [cursor, setCursor] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
-  const [form, setForm] = useState({ category: "Altro", account_id: "", amount: "", date: todayISO(), note: "" });
+  const [form, setForm] = useState({ category: "Altro", account_id: "", amount: "", date: todayISO(), note: "", recurring: false, recurringUntil: "" });
   const [error, setError] = useState("");
   const [view, setView] = useState("home");
   const [showFilters, setShowFilters] = useState(false);
@@ -564,13 +573,29 @@ function MainApp({ session, onBack }) {
     if (!amt || amt <= 0) { setError("Inserisci un importo valido."); return; }
     if (!form.date) { setError("Inserisci una data."); return; }
     if (!form.account_id) { setError("Seleziona un conto."); return; }
+    if (form.recurring) {
+      if (!form.recurringUntil) { setError("Seleziona fino a quale mese ripetere la spesa."); return; }
+      if (monthKeyToIdx(form.recurringUntil) < monthKeyToIdx(fullDateToMonth(form.date))) { setError("Il mese finale deve essere uguale o successivo al mese della data scelta."); return; }
+    }
     setError("");
     setSaveState("saving");
-    const { data, error: insErr } = await supabase.from("expenses").insert({ user_id: userId, category: form.category, account_id: form.account_id, amount: amt, date: form.date, note: form.note.trim() }).select().single();
-    if (insErr) { setSaveState("error"); setLastErrorMsg(insErr.message); return; }
-    setExpenses((prev) => [{ id: data.id, category: data.category, account_id: data.account_id, amount: Number(data.amount), date: data.date, note: data.note || "" }, ...prev]);
+    if (form.recurring) {
+      const startIdx = monthKeyToIdx(fullDateToMonth(form.date));
+      const endIdx = monthKeyToIdx(form.recurringUntil);
+      const rows = [];
+      for (let idx = startIdx; idx <= endIdx; idx++) {
+        rows.push({ user_id: userId, category: form.category, account_id: form.account_id, amount: amt, date: addMonthsToDate(form.date, idx - startIdx), note: form.note.trim() });
+      }
+      const { data, error: insErr } = await supabase.from("expenses").insert(rows).select();
+      if (insErr) { setSaveState("error"); setLastErrorMsg(insErr.message); return; }
+      setExpenses((prev) => [...data.map((d) => ({ id: d.id, category: d.category, account_id: d.account_id, amount: Number(d.amount), date: d.date, note: d.note || "" })), ...prev]);
+    } else {
+      const { data, error: insErr } = await supabase.from("expenses").insert({ user_id: userId, category: form.category, account_id: form.account_id, amount: amt, date: form.date, note: form.note.trim() }).select().single();
+      if (insErr) { setSaveState("error"); setLastErrorMsg(insErr.message); return; }
+      setExpenses((prev) => [{ id: data.id, category: data.category, account_id: data.account_id, amount: Number(data.amount), date: data.date, note: data.note || "" }, ...prev]);
+    }
     setSaveState("saved");
-    setForm({ ...form, amount: "", note: "" });
+    setForm({ ...form, amount: "", note: "", recurring: false, recurringUntil: "" });
     setView("home");
   };
 
@@ -886,12 +911,27 @@ function MainApp({ session, onBack }) {
                   <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={{ width: "95%", margin: "0 auto", display: "block", padding: "12px 12px", borderRadius: 10, border: "1px solid #DCE9F5", fontSize: 16, color: "#0B2545" }} />
                 </div>
               </div>
+              <div style={{ marginBottom: 20 }}>
+                <div onClick={() => { const next = !form.recurring; setForm({ ...form, recurring: next, recurringUntil: next ? monthKeyFromIdx(monthKeyToIdx(fullDateToMonth(form.date)) + 11) : "" }); }} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 5, border: form.recurring ? "1.5px solid #2F6FED" : "1.5px solid #DCE9F5", background: form.recurring ? "#2F6FED" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {form.recurring && <Check size={13} color="#FFFFFF" />}
+                  </div>
+                  <span style={{ fontSize: 14.5, color: "#0B2545" }}>Spesa fissa ricorrente ogni mese</span>
+                </div>
+                {form.recurring && (
+                  <div className="fade-in" style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Ripeti fino a</div>
+                    <input type="month" value={form.recurringUntil} min={fullDateToMonth(form.date)} onChange={(e) => setForm({ ...form, recurringUntil: e.target.value })} style={{ width: "95%", margin: "0 auto", display: "block", padding: "12px 12px", borderRadius: 10, border: "1px solid #DCE9F5", fontSize: 16, color: "#0B2545" }} />
+                    <div style={{ fontSize: 12.5, color: "#5B7B9B", marginTop: 6 }}>Verrà creato lo stesso movimento ogni mese, stesso giorno, fino al mese scelto incluso.</div>
+                  </div>
+                )}
+              </div>
               <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 8 }}>Nota (opzionale)</div>
               <input type="text" placeholder="Es. cena con amici" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} style={{ width: "95%", margin: "0 auto 8px", display: "block", padding: "12px 14px", borderRadius: 10, border: "1px solid #DCE9F5", fontSize: 16 }} />
               {error && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{error}</div>}
               <div style={{ flex: 1, minHeight: 8 }} />
               <button type="submit" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 0", borderRadius: 10, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 15.5, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
-                <Plus size={17} /> Aggiungi movimento
+                <Plus size={17} /> {form.recurring ? "Aggiungi movimenti ricorrenti" : "Aggiungi movimento"}
               </button>
             </form>
           </>
@@ -1713,12 +1753,15 @@ function NetWorthApp({ session, onBack }) {
 
       <div style={{ maxWidth: 560, width: "100%", margin: "0 auto", padding: "14px 20px", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
         <div style={{ display: "flex", justifyContent: "center", padding: "0 0 10px", flexShrink: 0 }}>
-          <div style={{ display: "flex", background: "#F3F8FD", borderRadius: 10, padding: 3, width: "100%", maxWidth: 280 }}>
-            <button onClick={() => setDashboardView("list")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "list" ? "#FFFFFF" : "transparent", color: dashboardView === "list" ? "#2F6FED" : "#5B7B9B", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "list" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
+          <div style={{ display: "flex", background: "#F3F8FD", borderRadius: 10, padding: 3, width: "100%", maxWidth: 380 }}>
+            <button onClick={() => setDashboardView("list")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "list" ? "#FFFFFF" : "transparent", color: dashboardView === "list" ? "#2F6FED" : "#5B7B9B", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "list" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
               Elenco
             </button>
-            <button onClick={() => setDashboardView("chart")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "chart" ? "#FFFFFF" : "transparent", color: dashboardView === "chart" ? "#2F6FED" : "#5B7B9B", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "chart" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
+            <button onClick={() => setDashboardView("chart")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "chart" ? "#FFFFFF" : "transparent", color: dashboardView === "chart" ? "#2F6FED" : "#5B7B9B", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "chart" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
               Statistiche
+            </button>
+            <button onClick={() => setDashboardView("balance")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "balance" ? "#FFFFFF" : "transparent", color: dashboardView === "balance" ? "#2F6FED" : "#5B7B9B", fontSize: 13, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "balance" ? "0 1px 4px rgba(11,37,69,0.1)" : "none" }}>
+              Bilancio
             </button>
           </div>
         </div>
@@ -1779,6 +1822,46 @@ function NetWorthApp({ session, onBack }) {
             hidePerformanceBox={true}
             emptyMessage=""
           />
+        ) : dashboardView === "balance" ? (
+          <div className="scrollbar-thin" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "10px 2px" }}>
+            <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 10 }}>Attivi</div>
+            {[
+              { label: "Liquidità", value: cashflowTotal },
+              { label: "Investimenti", value: investTotal },
+              { label: "Immobili", value: realEstateTotal },
+              { label: "Assicurazioni e Previdenza", value: insuranceTotal },
+            ].map((r) => (
+              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 4px", borderBottom: "1px dotted #DCE9F5" }}>
+                <span style={{ fontSize: 14.5, color: "#0B2545" }}>{r.label}</span>
+                <span className="mono" style={{ fontSize: 14.5, fontWeight: 600, color: "#0B2545" }}><Money>{fmtEUR(r.value)}</Money></span>
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 4px", marginTop: 2 }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: "#0B2545" }}>Totale Attivi</span>
+              <span className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "#0B2545" }}><Money>{fmtEUR(grandTotal)}</Money></span>
+            </div>
+
+            <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, margin: "22px 0 10px" }}>Passività</div>
+            {[
+              { label: "Mutuo", value: 0 },
+              { label: "Finanziamenti", value: 0 },
+              { label: "Debiti personali", value: 0 },
+            ].map((r) => (
+              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 4px", borderBottom: "1px dotted #DCE9F5" }}>
+                <span style={{ fontSize: 14.5, color: "#0B2545" }}>{r.label}</span>
+                <span className="mono" style={{ fontSize: 14.5, fontWeight: 600, color: "#B7C9DC" }}><Money>{fmtEUR(r.value)}</Money></span>
+              </div>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 4px", marginTop: 2 }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: "#0B2545" }}>Totale Passività</span>
+              <span className="mono" style={{ fontSize: 15.5, fontWeight: 700, color: "#0B2545" }}><Money>{fmtEUR(0)}</Money></span>
+            </div>
+
+            <div style={{ marginTop: 22, padding: "16px 14px", borderRadius: 12, background: "#F3F8FD", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 14.5, fontWeight: 700, color: "#0B2545" }}>Patrimonio netto</span>
+              <span className="mono" style={{ fontSize: 19, fontWeight: 700, color: "#0B2545" }}><Money>{fmtEUR(grandTotal - 0)}</Money></span>
+            </div>
+          </div>
         ) : (
         <div className="scrollbar-thin" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "10px 0" }}>
           {rows.map((r) => {
@@ -2107,7 +2190,7 @@ function InvestApp({ session, onBack }) {
   const [editHoldingError, setEditHoldingError] = useState("");
   const [editHoldingBusy, setEditHoldingBusy] = useState(false);
 
-  const [valForm, setValForm] = useState({ value_date: currentMonthISO(), market_value: "", cost_basis: "" });
+  const [valForm, setValForm] = useState({ value_date: currentMonthISO(), market_value: "", cost_basis: "", carryForward: false, carryUntil: "" });
   const [valError, setValError] = useState("");
   const [editingValId, setEditingValId] = useState(null);
   const [editValForm, setEditValForm] = useState({ value_date: "", market_value: "", cost_basis: "" });
@@ -2313,6 +2396,29 @@ function InvestApp({ session, onBack }) {
     if (!valForm.value_date) { setValError("Inserisci un mese."); return; }
     if (isNaN(mv) || mv < 0) { setValError("Inserisci un valore di mercato valido."); return; }
     if (isNaN(cb) || cb < 0) { setValError("Inserisci un costo storico valido."); return; }
+    if (valForm.carryForward) {
+      if (!valForm.carryUntil) { setValError("Seleziona fino a quale mese portare avanti il valore."); return; }
+      if (monthKeyToIdx(valForm.carryUntil) < monthKeyToIdx(valForm.value_date)) { setValError("Il mese finale deve essere uguale o successivo al mese di partenza."); return; }
+      const startIdx = monthKeyToIdx(valForm.value_date);
+      const endIdx = monthKeyToIdx(valForm.carryUntil);
+      for (let idx = startIdx; idx <= endIdx; idx++) {
+        const mk = monthKeyFromIdx(idx);
+        if (valuations.some((v) => v.holding_id === activeHoldingId && fullDateToMonth(v.value_date) === mk)) {
+          setValError(`Valori già presenti per il mese di ${fmtMonthYear(mk)}. Rimuovi o modifica quel valore prima di portare avanti il dato su questo intervallo.`);
+          return;
+        }
+      }
+      setValError("");
+      const rows = [];
+      for (let idx = startIdx; idx <= endIdx; idx++) {
+        rows.push({ user_id: userId, holding_id: activeHoldingId, value_date: monthDateToFull(monthKeyFromIdx(idx)), market_value: mv, cost_basis: cb });
+      }
+      const { data, error: insErr } = await supabase.from("investment_valuations").insert(rows).select();
+      if (insErr) { setValError(insErr.message); return; }
+      setValuations((prev) => [...data.map((d) => ({ ...d, market_value: Number(d.market_value), cost_basis: Number(d.cost_basis) })), ...prev]);
+      setValForm({ value_date: monthKeyFromIdx(endIdx + 1), market_value: "", cost_basis: "", carryForward: false, carryUntil: "" });
+      return;
+    }
     const duplicate = valuations.some((v) => v.holding_id === activeHoldingId && fullDateToMonth(v.value_date) === valForm.value_date);
     if (duplicate) {
       const [dy, dm] = valForm.value_date.split("-").map(Number);
@@ -2323,7 +2429,7 @@ function InvestApp({ session, onBack }) {
     const { data, error: insErr } = await supabase.from("investment_valuations").insert({ user_id: userId, holding_id: activeHoldingId, value_date: monthDateToFull(valForm.value_date), market_value: mv, cost_basis: cb }).select().single();
     if (insErr) { setValError(insErr.message); return; }
     setValuations((prev) => [{ ...data, market_value: Number(data.market_value), cost_basis: Number(data.cost_basis) }, ...prev]);
-    setValForm({ value_date: monthKeyFromIdx(monthKeyToIdx(valForm.value_date) + 1), market_value: "", cost_basis: "" });
+    setValForm({ value_date: monthKeyFromIdx(monthKeyToIdx(valForm.value_date) + 1), market_value: "", cost_basis: "", carryForward: false, carryUntil: "" });
   };
 
   const openEditValuation = (v) => {
@@ -2735,6 +2841,20 @@ function InvestApp({ session, onBack }) {
                     <input type="text" inputMode="decimal" placeholder="0,00 €" value={valForm.cost_basis} onChange={(e) => setValForm({ ...valForm, cost_basis: e.target.value })} className="mono" style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: "1px solid #DCE9F5", fontSize: 15, background: "#FFFFFF" }} />
                   </div>
                 </div>
+                <div style={{ marginBottom: 10 }}>
+                  <div onClick={() => { const next = !valForm.carryForward; setValForm({ ...valForm, carryForward: next, carryUntil: next ? valForm.value_date : "" }); }} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 5, border: valForm.carryForward ? "1.5px solid #2F6FED" : "1.5px solid #DCE9F5", background: valForm.carryForward ? "#2F6FED" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {valForm.carryForward && <Check size={12} color="#FFFFFF" />}
+                    </div>
+                    <span style={{ fontSize: 13.5, color: "#0B2545" }}>Porta avanti questo valore fino a...</span>
+                  </div>
+                  {valForm.carryForward && (
+                    <div className="fade-in" style={{ marginTop: 8 }}>
+                      <input type="month" value={valForm.carryUntil} min={valForm.value_date} onChange={(e) => setValForm({ ...valForm, carryUntil: e.target.value })} style={{ display: "block", width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 8, border: "1px solid #DCE9F5", fontSize: 15, color: "#0B2545", background: "#FFFFFF" }} />
+                      <div style={{ fontSize: 11.5, color: "#5B7B9B", marginTop: 6 }}>Stesso valore di mercato e costo storico ripetuto ogni mese fino a quello scelto (incluso). Potrai comunque modificarlo in un mese specifico in seguito.</div>
+                    </div>
+                  )}
+                </div>
                 {valError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{valError}</div>}
                 <button type="submit" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 8, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
                   <Plus size={15} /> Aggiungi
@@ -2869,7 +2989,7 @@ function InsuranceApp({ session, onBack }) {
   const [editPolicyError, setEditPolicyError] = useState("");
   const [editPolicyBusy, setEditPolicyBusy] = useState(false);
 
-  const [valForm, setValForm] = useState({ value_date: currentMonthISO(), market_value: "", cost_basis: "" });
+  const [valForm, setValForm] = useState({ value_date: currentMonthISO(), market_value: "", cost_basis: "", carryForward: false, carryUntil: "" });
   const [valError, setValError] = useState("");
   const [editingValId, setEditingValId] = useState(null);
   const [editValForm, setEditValForm] = useState({ value_date: "", market_value: "", cost_basis: "" });
@@ -2994,6 +3114,29 @@ function InsuranceApp({ session, onBack }) {
     if (!valForm.value_date) { setValError("Inserisci un mese."); return; }
     if (isNaN(mv) || mv < 0) { setValError("Inserisci un valore attuale valido."); return; }
     if (isNaN(cb) || cb < 0) { setValError("Inserisci un valore versato valido."); return; }
+    if (valForm.carryForward) {
+      if (!valForm.carryUntil) { setValError("Seleziona fino a quale mese portare avanti il valore."); return; }
+      if (monthKeyToIdx(valForm.carryUntil) < monthKeyToIdx(valForm.value_date)) { setValError("Il mese finale deve essere uguale o successivo al mese di partenza."); return; }
+      const startIdx = monthKeyToIdx(valForm.value_date);
+      const endIdx = monthKeyToIdx(valForm.carryUntil);
+      for (let idx = startIdx; idx <= endIdx; idx++) {
+        const mk = monthKeyFromIdx(idx);
+        if (valuations.some((v) => v.policy_id === activePolicyId && fullDateToMonth(v.value_date) === mk)) {
+          setValError(`Valori già presenti per il mese di ${fmtMonthYear(mk)}. Rimuovi o modifica quel valore prima di portare avanti il dato su questo intervallo.`);
+          return;
+        }
+      }
+      setValError("");
+      const rows = [];
+      for (let idx = startIdx; idx <= endIdx; idx++) {
+        rows.push({ user_id: userId, policy_id: activePolicyId, value_date: monthDateToFull(monthKeyFromIdx(idx)), market_value: mv, cost_basis: cb });
+      }
+      const { data, error: insErr } = await supabase.from("insurance_valuations").insert(rows).select();
+      if (insErr) { setValError(insErr.message); return; }
+      setValuations((prev) => [...data.map((d) => ({ ...d, market_value: Number(d.market_value), cost_basis: Number(d.cost_basis) })), ...prev]);
+      setValForm({ value_date: monthKeyFromIdx(endIdx + 1), market_value: "", cost_basis: "", carryForward: false, carryUntil: "" });
+      return;
+    }
     const duplicate = valuations.some((v) => v.policy_id === activePolicyId && fullDateToMonth(v.value_date) === valForm.value_date);
     if (duplicate) {
       const [dy, dm] = valForm.value_date.split("-").map(Number);
@@ -3004,7 +3147,7 @@ function InsuranceApp({ session, onBack }) {
     const { data, error: insErr } = await supabase.from("insurance_valuations").insert({ user_id: userId, policy_id: activePolicyId, value_date: monthDateToFull(valForm.value_date), market_value: mv, cost_basis: cb }).select().single();
     if (insErr) { setValError(insErr.message); return; }
     setValuations((prev) => [{ ...data, market_value: Number(data.market_value), cost_basis: Number(data.cost_basis) }, ...prev]);
-    setValForm({ value_date: monthKeyFromIdx(monthKeyToIdx(valForm.value_date) + 1), market_value: "", cost_basis: "" });
+    setValForm({ value_date: monthKeyFromIdx(monthKeyToIdx(valForm.value_date) + 1), market_value: "", cost_basis: "", carryForward: false, carryUntil: "" });
   };
 
   const openEditValuation = (v) => {
@@ -3236,6 +3379,20 @@ function InsuranceApp({ session, onBack }) {
                     <input type="text" inputMode="decimal" placeholder="0,00 €" value={valForm.cost_basis} onChange={(e) => setValForm({ ...valForm, cost_basis: e.target.value })} className="mono" style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: "1px solid #DCE9F5", fontSize: 15, background: "#FFFFFF" }} />
                   </div>
                 </div>
+                <div style={{ marginBottom: 10 }}>
+                  <div onClick={() => { const next = !valForm.carryForward; setValForm({ ...valForm, carryForward: next, carryUntil: next ? valForm.value_date : "" }); }} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 5, border: valForm.carryForward ? "1.5px solid #2F6FED" : "1.5px solid #DCE9F5", background: valForm.carryForward ? "#2F6FED" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {valForm.carryForward && <Check size={12} color="#FFFFFF" />}
+                    </div>
+                    <span style={{ fontSize: 13.5, color: "#0B2545" }}>Porta avanti questo valore fino a...</span>
+                  </div>
+                  {valForm.carryForward && (
+                    <div className="fade-in" style={{ marginTop: 8 }}>
+                      <input type="month" value={valForm.carryUntil} min={valForm.value_date} onChange={(e) => setValForm({ ...valForm, carryUntil: e.target.value })} style={{ display: "block", width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 8, border: "1px solid #DCE9F5", fontSize: 15, color: "#0B2545", background: "#FFFFFF" }} />
+                      <div style={{ fontSize: 11.5, color: "#5B7B9B", marginTop: 6 }}>Stesso valore di mercato e costo storico ripetuto ogni mese fino a quello scelto (incluso). Potrai comunque modificarlo in un mese specifico in seguito.</div>
+                    </div>
+                  )}
+                </div>
                 {valError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{valError}</div>}
                 <button type="submit" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 8, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
                   <Plus size={15} /> Aggiungi
@@ -3378,7 +3535,7 @@ function RealEstateApp({ session, onBack }) {
   const [editPropertyError, setEditPropertyError] = useState("");
   const [editPropertyBusy, setEditPropertyBusy] = useState(false);
 
-  const [valForm, setValForm] = useState({ value_date: currentMonthISO(), market_value: "", cost_basis: "" });
+  const [valForm, setValForm] = useState({ value_date: currentMonthISO(), market_value: "", cost_basis: "", carryForward: false, carryUntil: "" });
   const [valError, setValError] = useState("");
   const [editingValId, setEditingValId] = useState(null);
   const [editValForm, setEditValForm] = useState({ value_date: "", market_value: "", cost_basis: "" });
@@ -3491,6 +3648,29 @@ function RealEstateApp({ session, onBack }) {
     if (!valForm.value_date) { setValError("Inserisci un mese."); return; }
     if (isNaN(mv) || mv < 0) { setValError("Inserisci un valore attuale valido."); return; }
     if (isNaN(cb) || cb < 0) { setValError("Inserisci un costo storico valido."); return; }
+    if (valForm.carryForward) {
+      if (!valForm.carryUntil) { setValError("Seleziona fino a quale mese portare avanti il valore."); return; }
+      if (monthKeyToIdx(valForm.carryUntil) < monthKeyToIdx(valForm.value_date)) { setValError("Il mese finale deve essere uguale o successivo al mese di partenza."); return; }
+      const startIdx = monthKeyToIdx(valForm.value_date);
+      const endIdx = monthKeyToIdx(valForm.carryUntil);
+      for (let idx = startIdx; idx <= endIdx; idx++) {
+        const mk = monthKeyFromIdx(idx);
+        if (valuations.some((v) => v.property_id === activePropertyId && fullDateToMonth(v.value_date) === mk)) {
+          setValError(`Valori già presenti per il mese di ${fmtMonthYear(mk)}. Rimuovi o modifica quel valore prima di portare avanti il dato su questo intervallo.`);
+          return;
+        }
+      }
+      setValError("");
+      const rows = [];
+      for (let idx = startIdx; idx <= endIdx; idx++) {
+        rows.push({ user_id: userId, property_id: activePropertyId, value_date: monthDateToFull(monthKeyFromIdx(idx)), market_value: mv, cost_basis: cb });
+      }
+      const { data, error: insErr } = await supabase.from("real_estate_valuations").insert(rows).select();
+      if (insErr) { setValError(insErr.message); return; }
+      setValuations((prev) => [...data.map((d) => ({ ...d, market_value: Number(d.market_value), cost_basis: Number(d.cost_basis) })), ...prev]);
+      setValForm({ value_date: monthKeyFromIdx(endIdx + 1), market_value: "", cost_basis: "", carryForward: false, carryUntil: "" });
+      return;
+    }
     const duplicate = valuations.some((v) => v.property_id === activePropertyId && fullDateToMonth(v.value_date) === valForm.value_date);
     if (duplicate) {
       const [dy, dm] = valForm.value_date.split("-").map(Number);
@@ -3501,7 +3681,7 @@ function RealEstateApp({ session, onBack }) {
     const { data, error: insErr } = await supabase.from("real_estate_valuations").insert({ user_id: userId, property_id: activePropertyId, value_date: monthDateToFull(valForm.value_date), market_value: mv, cost_basis: cb }).select().single();
     if (insErr) { setValError(insErr.message); return; }
     setValuations((prev) => [{ ...data, market_value: Number(data.market_value), cost_basis: Number(data.cost_basis) }, ...prev]);
-    setValForm({ value_date: monthKeyFromIdx(monthKeyToIdx(valForm.value_date) + 1), market_value: "", cost_basis: "" });
+    setValForm({ value_date: monthKeyFromIdx(monthKeyToIdx(valForm.value_date) + 1), market_value: "", cost_basis: "", carryForward: false, carryUntil: "" });
   };
 
   const openEditValuation = (v) => {
@@ -3701,6 +3881,20 @@ function RealEstateApp({ session, onBack }) {
                     <div style={{ fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase", color: "#5B7B9B", fontWeight: 600, marginBottom: 6 }}>Costo storico</div>
                     <input type="text" inputMode="decimal" placeholder="0,00 €" value={valForm.cost_basis} onChange={(e) => setValForm({ ...valForm, cost_basis: e.target.value })} className="mono" style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: "1px solid #DCE9F5", fontSize: 15, background: "#FFFFFF" }} />
                   </div>
+                </div>
+                <div style={{ marginBottom: 10 }}>
+                  <div onClick={() => { const next = !valForm.carryForward; setValForm({ ...valForm, carryForward: next, carryUntil: next ? valForm.value_date : "" }); }} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                    <div style={{ width: 18, height: 18, borderRadius: 5, border: valForm.carryForward ? "1.5px solid #2F6FED" : "1.5px solid #DCE9F5", background: valForm.carryForward ? "#2F6FED" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {valForm.carryForward && <Check size={12} color="#FFFFFF" />}
+                    </div>
+                    <span style={{ fontSize: 13.5, color: "#0B2545" }}>Porta avanti questo valore fino a...</span>
+                  </div>
+                  {valForm.carryForward && (
+                    <div className="fade-in" style={{ marginTop: 8 }}>
+                      <input type="month" value={valForm.carryUntil} min={valForm.value_date} onChange={(e) => setValForm({ ...valForm, carryUntil: e.target.value })} style={{ display: "block", width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: 8, border: "1px solid #DCE9F5", fontSize: 15, color: "#0B2545", background: "#FFFFFF" }} />
+                      <div style={{ fontSize: 11.5, color: "#5B7B9B", marginTop: 6 }}>Stesso valore di mercato e costo storico ripetuto ogni mese fino a quello scelto (incluso). Potrai comunque modificarlo in un mese specifico in seguito.</div>
+                    </div>
+                  )}
                 </div>
                 {valError && <div style={{ color: "#B4483A", fontSize: 13, marginBottom: 8 }}>{valError}</div>}
                 <button type="submit" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 8, border: "none", background: "#0B2545", color: "#FFFFFF", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
