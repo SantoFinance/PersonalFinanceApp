@@ -2725,15 +2725,13 @@ function InvestApp({ session, onBack }) {
       <div style={{ maxWidth: 560, width: "100%", margin: "0 auto", padding: "14px 20px", display: "flex", flexDirection: "column", minHeight: 0, flex: 1 }}>
         {view === "home" ? (
           <>
-            <div style={{ display: "flex", justifyContent: "center", padding: "4px 0 10px", flexShrink: 0 }}>
-              <div style={{ display: "flex", background: "var(--color-bg-tint)", borderRadius: 10, padding: 3, width: "100%", maxWidth: 280 }}>
-                <button onClick={() => setDashboardView("list")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "list" ? "#FFFFFF" : "transparent", color: dashboardView === "list" ? "var(--color-primary)" : "var(--color-primary)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "list" ? "0 1px 4px rgba(5,91,101,0.1)" : "none" }}>
-                  Elenco
-                </button>
-                <button onClick={() => setDashboardView("chart")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: dashboardView === "chart" ? "#FFFFFF" : "transparent", color: dashboardView === "chart" ? "var(--color-primary)" : "var(--color-primary)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: dashboardView === "chart" ? "0 1px 4px rgba(5,91,101,0.1)" : "none" }}>
-                  Statistiche
-                </button>
-              </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 28, padding: "4px 0 12px", flexShrink: 0, borderBottom: "1px solid var(--color-border)" }}>
+              <button onClick={() => setDashboardView("list")} style={{ background: "none", border: "none", borderBottom: dashboardView === "list" ? "2px solid var(--color-primary)" : "2px solid transparent", padding: "0 2px 10px", marginBottom: -1, color: dashboardView === "list" ? "var(--color-heading)" : "var(--color-border-light)", fontSize: 14.5, fontWeight: 600, cursor: "pointer" }}>
+                Elenco
+              </button>
+              <button onClick={() => setDashboardView("chart")} style={{ background: "none", border: "none", borderBottom: dashboardView === "chart" ? "2px solid var(--color-primary)" : "2px solid transparent", padding: "0 2px 10px", marginBottom: -1, color: dashboardView === "chart" ? "var(--color-heading)" : "var(--color-border-light)", fontSize: 14.5, fontWeight: 600, cursor: "pointer" }}>
+                Statistiche
+              </button>
             </div>
 
             {dashboardView === "chart" ? (
@@ -2791,7 +2789,7 @@ function InvestApp({ session, onBack }) {
               </div>
             </div>
 
-            <div className="scrollbar-thin" style={{ flex: "1 1 auto", maxHeight: 400, minHeight: 0, overflowY: "auto", padding: "6px 0" }}>
+            <div className="scrollbar-thin" style={{ flex: "1 1 auto", maxHeight: 400, minHeight: 0, overflowY: "auto", padding: "10px 0", display: "flex", flexDirection: "column", gap: 12 }}>
               {portfolios.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "30px 10px" }}>
                   <Briefcase size={34} color="var(--color-border-light)" style={{ marginBottom: 12 }} />
@@ -2803,21 +2801,21 @@ function InvestApp({ session, onBack }) {
                 const weightPct = grandTotal.marketValue > 0 ? (t.marketValue / grandTotal.marketValue) * 100 : 0;
                 const rPct = returnPct(t);
                 return (
-                  <div key={p.id} onClick={() => openPortfolio(p)} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 6px", cursor: "pointer" }}>
-                    <div style={{ width: 38, height: 38, borderRadius: 9, background: "var(--color-bg-tint)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <PIcon size={17} color="var(--color-primary)" />
+                  <div key={p.id} onClick={() => openPortfolio(p)} style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 22, background: "var(--color-bg-tint)", cursor: "pointer", flexShrink: 0 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <PIcon size={18} color="var(--color-primary)" />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
-                        <span style={{ fontSize: 16, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                        <span style={{ fontSize: 16, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
                         <span className="mono" style={{ fontSize: 16, fontWeight: 600, flexShrink: 0, marginLeft: 8 }}><Money>{fmtEUR(t.marketValue)}</Money></span>
                       </div>
-                      <div style={{ height: 4, background: "var(--color-bg-tint)", borderRadius: 2, overflow: "hidden", marginBottom: 4 }}>
-                        <div className="bar-fill" style={{ height: "100%", width: `${weightPct}%`, background: "var(--color-primary)", borderRadius: 2 }} />
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                        <span style={{ fontSize: 12, color: "var(--color-border-light)" }}>{weightPct.toFixed(0)}% del totale · {t.count} {t.count === 1 ? "titolo" : "titoli"}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                        <span style={{ fontSize: 12, color: "var(--color-border-light)" }}>{weightPct.toFixed(0)}% del totale</span>
                         <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: t.gain > 0 ? "var(--color-success)" : t.gain < 0 ? "var(--color-danger)" : "var(--color-border-light)" }}><Money>{t.gain > 0 ? "+" : ""}{fmtEUR(t.gain)}</Money>{rPct !== null && ` (${fmtPct(rPct)})`}</span>
+                      </div>
+                      <div style={{ height: 6, background: "#FFFFFF", borderRadius: 3, overflow: "hidden" }}>
+                        <div className="bar-fill" style={{ height: "100%", width: `${weightPct}%`, background: "var(--color-primary)", borderRadius: 3 }} />
                       </div>
                     </div>
                   </div>
@@ -2907,15 +2905,13 @@ function InvestApp({ session, onBack }) {
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "center", padding: "10px 0", flexShrink: 0 }}>
-              <div style={{ display: "flex", background: "var(--color-bg-tint)", borderRadius: 10, padding: 3, width: "100%", maxWidth: 280 }}>
-                <button onClick={() => setPortfolioDashView("list")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: portfolioDashView === "list" ? "#FFFFFF" : "transparent", color: portfolioDashView === "list" ? "var(--color-primary)" : "var(--color-primary)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: portfolioDashView === "list" ? "0 1px 4px rgba(5,91,101,0.1)" : "none" }}>
-                  Elenco
-                </button>
-                <button onClick={() => setPortfolioDashView("chart")} style={{ flex: 1, padding: "5px 0", borderRadius: 8, border: "none", background: portfolioDashView === "chart" ? "#FFFFFF" : "transparent", color: portfolioDashView === "chart" ? "var(--color-primary)" : "var(--color-primary)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: portfolioDashView === "chart" ? "0 1px 4px rgba(5,91,101,0.1)" : "none" }}>
-                  Statistiche
-                </button>
-              </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 28, padding: "10px 0 12px", flexShrink: 0, borderBottom: "1px solid var(--color-border)" }}>
+              <button onClick={() => setPortfolioDashView("list")} style={{ background: "none", border: "none", borderBottom: portfolioDashView === "list" ? "2px solid var(--color-primary)" : "2px solid transparent", padding: "0 2px 10px", marginBottom: -1, color: portfolioDashView === "list" ? "var(--color-heading)" : "var(--color-border-light)", fontSize: 14.5, fontWeight: 600, cursor: "pointer" }}>
+                Elenco
+              </button>
+              <button onClick={() => setPortfolioDashView("chart")} style={{ background: "none", border: "none", borderBottom: portfolioDashView === "chart" ? "2px solid var(--color-primary)" : "2px solid transparent", padding: "0 2px 10px", marginBottom: -1, color: portfolioDashView === "chart" ? "var(--color-heading)" : "var(--color-border-light)", fontSize: 14.5, fontWeight: 600, cursor: "pointer" }}>
+                Statistiche
+              </button>
             </div>
 
             {portfolioDashView === "chart" ? (
@@ -2936,7 +2932,7 @@ function InvestApp({ session, onBack }) {
               />
             ) : (
               <>
-            <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "10px 0" }}>
+            <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "10px 0", display: "flex", flexDirection: "column", gap: 12 }}>
               {portfolioHoldings.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "30px 10px" }}>
                   <div style={{ fontSize: 14, color: "var(--color-primary)" }}>Non hai ancora titoli in questo portafoglio.</div>
@@ -2947,20 +2943,20 @@ function InvestApp({ session, onBack }) {
                 const weightPct = t.hasData && portTotal > 0 ? (t.marketValue / portTotal) * 100 : 0;
                 const rPct = returnPct(t);
                 return (
-                  <div key={h.id} onClick={() => openHolding(h)} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 12, padding: "13px 6px", borderBottom: "1px dotted var(--color-border)", cursor: "pointer" }}>
+                  <div key={h.id} onClick={() => openHolding(h)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", borderRadius: 22, background: "var(--color-bg-tint)", cursor: "pointer", flexShrink: 0 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: t.hasData ? 4 : 0 }}>
-                        <span style={{ fontSize: 16, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: t.hasData ? 8 : 0 }}>
+                        <span style={{ fontSize: 16, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.name}</span>
                         {t.hasData && <span className="mono" style={{ fontSize: 16, fontWeight: 600, flexShrink: 0, marginLeft: 8 }}><Money>{fmtEUR(t.marketValue)}</Money></span>}
                       </div>
                       {t.hasData ? (
                         <>
-                          <div style={{ height: 4, background: "var(--color-bg-tint)", borderRadius: 2, overflow: "hidden", marginBottom: 4 }}>
-                            <div className="bar-fill" style={{ height: "100%", width: `${weightPct}%`, background: "var(--color-primary)", borderRadius: 2 }} />
-                          </div>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
                             <span style={{ fontSize: 12, color: "var(--color-border-light)" }}>{weightPct.toFixed(0)}% del portafoglio</span>
                             <span className="mono" style={{ fontSize: 12, fontWeight: 600, color: t.gain > 0 ? "var(--color-success)" : t.gain < 0 ? "var(--color-danger)" : "var(--color-border-light)" }}><Money>{t.gain > 0 ? "+" : ""}{fmtEUR(t.gain)}</Money>{rPct !== null && ` (${fmtPct(rPct)})`}</span>
+                          </div>
+                          <div style={{ height: 6, background: "#FFFFFF", borderRadius: 3, overflow: "hidden" }}>
+                            <div className="bar-fill" style={{ height: "100%", width: `${weightPct}%`, background: "var(--color-primary)", borderRadius: 3 }} />
                           </div>
                         </>
                       ) : (
