@@ -4903,20 +4903,8 @@ function CashflowApp({ session, onBack }) {
                   </div>
                 )}
 
-                <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-                <div className="scrollbar-thin" style={{ height: "100%", overflowY: "auto", overflowX: "auto" }}>
-                  <div style={{ width: 514 }}>
-                    <div style={{ display: "flex", alignItems: "center", padding: "0 4px 6px" }}>
-                      <div style={{ width: 42, flexShrink: 0, position: "sticky", left: 0, background: "#FFFFFF", zIndex: 2 }} />
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Entrate</div>
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Invest.</div>
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Spese</div>
-                      <div style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Net Inc.</div>
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saving</div>
-                      <div style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Sav. %</div>
-                      <div style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saldo</div>
-                    </div>
-
+                <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+                  <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, paddingBottom: 4 }}>
                     {yearRows.map((r) => {
                       const idx = yearCursor * 12 + r.monthIdx;
                       const openIdx = settings ? monthKeyToIdx(settings.monthKey) : -Infinity;
@@ -4924,35 +4912,66 @@ function CashflowApp({ session, onBack }) {
                       const isFuture = idx > todayIdx;
                       const rowOpacity = (activeAccountId !== "all" && idx <= openIdx) ? 0.3 : (isFuture ? 0.55 : 1);
                       return (
-                        <div key={r.key} onClick={() => !disabled && openRow(r.monthIdx)} className={disabled ? "" : "row-hover"} style={{ display: "flex", alignItems: "center", padding: "8px 4px", borderBottom: "1px dotted var(--color-bg-tint)", cursor: disabled ? "default" : "pointer" }}>
-                          <div style={{ width: 42, flexShrink: 0, fontSize: 12, color: "var(--color-primary)", textTransform: "capitalize", position: "sticky", left: 0, background: "#FFFFFF", zIndex: 1, opacity: rowOpacity }}>{MESI[r.monthIdx].slice(0, 3)}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-success)", opacity: rowOpacity }}>{r.hasEntry ? <Money>{fmtEUR(r.income)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-primary)", opacity: rowOpacity }}>{r.hasEntry ? <Money>{fmtEUR(r.investments)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-danger)", opacity: rowOpacity }}>{r.hasEntry ? <Money>{fmtEUR(r.expenses)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.netIncome === null ? "var(--color-border-light)" : (r.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)"), opacity: rowOpacity }}>{r.netIncome !== null ? <Money>{fmtEUR(r.netIncome)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)"), opacity: rowOpacity }}>{r.saving !== null ? <Money>{fmtEUR(r.saving)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 10.5, fontWeight: 600, color: r.savingRate === null ? "var(--color-border-light)" : (r.savingRate >= 0 ? "var(--color-success)" : "var(--color-danger)"), opacity: rowOpacity }}>{r.savingRate !== null ? fmtSavingRate(r.savingRate) : "—"}</div>
-                          <div className="mono" style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 12.5, fontWeight: 700, color: "var(--color-heading)", opacity: rowOpacity }}>
-                            {r.bankBalance !== null && r.bankBalance !== undefined ? <Money>{fmtEUR(r.bankBalance)}</Money> : <span style={{ color: "var(--color-border-light)", fontWeight: 400 }}>—</span>}
-                            {r.manualOverride && <Pencil size={9} color="var(--color-warning)" style={{ marginLeft: 3, verticalAlign: "middle" }} />}
+                        <div key={r.key} onClick={() => !disabled && openRow(r.monthIdx)} className="card-item" style={{ flexDirection: "column", alignItems: "stretch", cursor: disabled ? "default" : "pointer", opacity: rowOpacity, flexShrink: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: r.hasEntry ? 8 : 0 }}>
+                            <span className="text-lg" style={{ textTransform: "capitalize" }}>{MESI[r.monthIdx]}</span>
+                            {r.hasEntry && (
+                              <div style={{ textAlign: "right" }}>
+                                <div style={{ fontSize: 10.5, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Risparmiato</div>
+                                <div className="mono" style={{ fontSize: 16, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>
+                                  {r.saving !== null ? <Money>{r.saving > 0 ? "+" : ""}{fmtEUR(r.saving)}</Money> : "—"}
+                                </div>
+                              </div>
+                            )}
                           </div>
+                          {r.hasEntry ? (
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Entrate</div>
+                                <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-success)" }}><Money>+{fmtEUR(r.income)}</Money></div>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Investito</div>
+                                <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-primary)" }}><Money>{fmtEUR(r.investments)}</Money></div>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Uscite</div>
+                                <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-danger)" }}><Money>-{fmtEUR(r.expenses)}</Money></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12.5, color: "var(--color-border-light)" }}>Nessun dato per questo mese</div>
+                          )}
                         </div>
                       );
                     })}
+                  </div>
 
-                    <div style={{ display: "flex", alignItems: "center", padding: "10px 4px", marginTop: 6, background: "var(--color-bg-tint)", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)" }}>
-                      <div style={{ width: 42, flexShrink: 0, fontSize: 11.5, fontWeight: 700, color: "var(--color-heading)", position: "sticky", left: 0, background: "var(--color-bg-tint)", zIndex: 1 }}>Tot.</div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--color-success)" }}><Money>{fmtEUR(yearTotals.income)}</Money></div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--color-primary)" }}><Money>{fmtEUR(yearTotals.investments)}</Money></div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--color-danger)" }}><Money>{fmtEUR(yearTotals.expenses)}</Money></div>
-                      <div className="mono" style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: yearTotals.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)" }}><Money>{fmtEUR(yearTotals.netIncome)}</Money></div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: yearTotals.saving >= 0 ? "var(--color-success)" : "var(--color-danger)" }}><Money>{fmtEUR(yearTotals.saving)}</Money></div>
-                      <div className="mono" style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 10.5, fontWeight: 700, color: yearTotals.savingRate === null ? "var(--color-border-light)" : (yearTotals.savingRate >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{yearTotals.savingRate !== null ? fmtSavingRate(yearTotals.savingRate) : "—"}</div>
-                      <div className="mono" style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 13, fontWeight: 700, color: "var(--color-heading)" }}>{yearTotals.finalBalance !== null ? <Money>{fmtEUR(yearTotals.finalBalance)}</Money> : "—"}</div>
+                  <div className="card-item" style={{ marginTop: 8, flexDirection: "column", alignItems: "stretch", background: "var(--color-heading)", flexShrink: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                      <span className="text-lg" style={{ color: "#FFFFFF" }}>Totale {yearCursor}</span>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Risparmiato</div>
+                        <div className="mono" style={{ fontSize: 16, fontWeight: 600, color: yearTotals.saving >= 0 ? "var(--color-success)" : "#FFB4A8" }}>
+                          <Money>{yearTotals.saving > 0 ? "+" : ""}{fmtEUR(yearTotals.saving)}</Money>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Entrate</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}><Money>+{fmtEUR(yearTotals.income)}</Money></div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Investito</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}><Money>{fmtEUR(yearTotals.investments)}</Money></div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Uscite</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}><Money>-{fmtEUR(yearTotals.expenses)}</Money></div>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div style={{ position: "absolute", top: 0, right: 0, bottom: 8, width: 20, background: "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.95))", pointerEvents: "none" }} />
                 </div>
                   </>
                 ) : (
