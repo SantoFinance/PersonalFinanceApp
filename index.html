@@ -4470,9 +4470,21 @@ function CashflowApp({ session, onBack }) {
   const [saveState, setSaveState] = useState("idle");
   const [lastErrorMsg, setLastErrorMsg] = useState("");
   const [activeAccountId, setActiveAccountId] = useState("all");
-  const [viewMode, setViewMode] = useState("monthly");
+  const [viewMode, setViewMode] = useState("annual");
+  const [displayStyle, setDisplayStyle] = useState("list");
+  const [acctMenuOpen, setAcctMenuOpen] = useState(false);
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
 
   const [yearCursor, setYearCursor] = useState(() => new Date().getFullYear());
+  const [monthCursor, setMonthCursor] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
+  const goMonthCursor = (delta) => {
+    setMonthCursor((c) => {
+      const idx = c.year * 12 + c.month + delta;
+      return { year: Math.floor(idx / 12), month: ((idx % 12) + 12) % 12 };
+    });
+  };
 
   const [addAccountStep, setAddAccountStep] = useState(null);
   const [pendingAccountId, setPendingAccountId] = useState(null);
@@ -4554,32 +4566,40 @@ function CashflowApp({ session, onBack }) {
     return chain[prevKey] ? (chain[prevKey].bankBalance ?? null) : null;
   };
 
+  const computeMonthRow = (year, month) => {
+    const key = `${year}-${String(month + 1).padStart(2, "0")}`;
+    if (activeAccountId === "all") {
+      let income = 0, investments = 0, expenses = 0, bankBalance = 0, hasEntry = false;
+      accounts.forEach((acc) => {
+        const c = chainsByAccount[acc.id];
+        const r = c ? c[key] : null;
+        if (r && r.hasEntry) {
+          hasEntry = true;
+          income += r.income; investments += r.investments; expenses += r.expenses;
+          bankBalance += (r.bankBalance ?? 0);
+        }
+      });
+      return { key, monthIdx: month, hasEntry, income, investments, expenses, bankBalance: hasEntry ? bankBalance : null, manualOverride: false, ...(hasEntry ? cashflowDerived(income, investments, expenses) : { netIncome: null, saving: null, savingRate: null }) };
+    } else {
+      const base = { key, monthIdx: month, hasEntry: false, bankBalance: null, ...(chain[key] || {}) };
+      return { ...base, ...(base.hasEntry ? cashflowDerived(base.income, base.investments, base.expenses) : { netIncome: null, saving: null, savingRate: null }) };
+    }
+  };
+
   const yearRows = useMemo(() => {
     const rows = [];
-    if (activeAccountId === "all") {
-      for (let m = 0; m < 12; m++) {
-        const key = `${yearCursor}-${String(m + 1).padStart(2, "0")}`;
-        let income = 0, investments = 0, expenses = 0, bankBalance = 0, hasEntry = false;
-        accounts.forEach((acc) => {
-          const c = chainsByAccount[acc.id];
-          const r = c ? c[key] : null;
-          if (r && r.hasEntry) {
-            hasEntry = true;
-            income += r.income; investments += r.investments; expenses += r.expenses;
-            bankBalance += (r.bankBalance ?? 0);
-          }
-        });
-        rows.push({ key, monthIdx: m, hasEntry, income, investments, expenses, bankBalance: hasEntry ? bankBalance : null, manualOverride: false, ...(hasEntry ? cashflowDerived(income, investments, expenses) : { netIncome: null, saving: null, savingRate: null }) });
-      }
-    } else {
-      for (let m = 0; m < 12; m++) {
-        const key = `${yearCursor}-${String(m + 1).padStart(2, "0")}`;
-        const base = { key, monthIdx: m, hasEntry: false, bankBalance: null, ...(chain[key] || {}) };
-        rows.push({ ...base, ...(base.hasEntry ? cashflowDerived(base.income, base.investments, base.expenses) : { netIncome: null, saving: null, savingRate: null }) });
-      }
-    }
+    for (let m = 0; m < 12; m++) rows.push(computeMonthRow(yearCursor, m));
     return rows;
   }, [activeAccountId, chain, chainsByAccount, accounts, yearCursor]);
+
+  const singleMonthRow = useMemo(() => computeMonthRow(monthCursor.year, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
+
+  const prevMonthRow = useMemo(() => {
+    const idx = monthCursor.year * 12 + monthCursor.month - 1;
+    return computeMonthRow(Math.floor(idx / 12), ((idx % 12) + 12) % 12);
+  }, [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
+
+  const pctChange = (curr, prev) => (prev !== 0 && prev !== null && prev !== undefined) ? ((curr - prev) / Math.abs(prev)) * 100 : null;
 
   const yearTotals = useMemo(() => {
     let income = 0, investments = 0, expenses = 0, finalBalance = null;
@@ -4590,57 +4610,6 @@ function CashflowApp({ session, onBack }) {
     const derived = cashflowDerived(income, investments, expenses);
     return { income, investments, expenses, finalBalance, ...derived };
   }, [yearRows]);
-
-  const annualRows = useMemo(() => {
-    let minYear = null;
-    const nowYear = new Date().getFullYear();
-    let maxYear = nowYear;
-    if (activeAccountId === "all") {
-      accounts.forEach((acc) => {
-        const s = settingsByAccount[acc.id];
-        if (s) { const y = Number(s.monthKey.split("-")[0]); if (minYear === null || y < minYear) minYear = y; }
-      });
-    } else if (settings) {
-      minYear = Number(settings.monthKey.split("-")[0]);
-    }
-    entries.forEach((e) => { const y = Number(fullDateToMonth(e.value_date).split("-")[0]); if (y > maxYear) maxYear = y; });
-    if (minYear === null) return [];
-    const rows = [];
-    for (let y = minYear; y <= maxYear; y++) {
-      let income = 0, investments = 0, expenses = 0, finalBalance = null, any = false;
-      if (activeAccountId === "all") {
-        let sumBalance = 0;
-        accounts.forEach((acc) => {
-          const c = chainsByAccount[acc.id];
-          if (!c) return;
-          for (let m = 0; m < 12; m++) {
-            const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-            const r = c[key];
-            if (r && r.hasEntry) { any = true; income += r.income; investments += r.investments; expenses += r.expenses; }
-          }
-          let accBalance = null;
-          for (let m = 0; m < 12; m++) {
-            const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-            const r = c[key];
-            if (r && r.bankBalance !== null && r.bankBalance !== undefined) accBalance = r.bankBalance;
-          }
-          if (accBalance !== null) sumBalance += accBalance;
-        });
-        finalBalance = any ? sumBalance : null;
-      } else {
-        const c = chainsByAccount[activeAccountId] || {};
-        for (let m = 0; m < 12; m++) {
-          const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-          const r = c[key];
-          if (r && r.hasEntry) { any = true; income += r.income; investments += r.investments; expenses += r.expenses; }
-          if (r && r.bankBalance !== null && r.bankBalance !== undefined) finalBalance = r.bankBalance;
-        }
-      }
-      rows.push({ year: y, income, investments, expenses, finalBalance, hasData: any, ...(any ? cashflowDerived(income, investments, expenses) : { netIncome: null, saving: null, savingRate: null }) });
-    }
-    return rows.reverse();
-  }, [accounts, settingsByAccount, settings, activeAccountId, chainsByAccount, entries]);
-
 
   const openingYear = settings ? Number(settings.monthKey.split("-")[0]) : null;
   let openingInfo = null;
@@ -4689,10 +4658,11 @@ function CashflowApp({ session, onBack }) {
     setEditingOpening(false);
   };
 
-  const openRow = (monthIdx) => {
+  const openRow = (monthIdx, yearOverride) => {
+    const year = yearOverride !== undefined ? yearOverride : yearCursor;
     if (activeAccountId === "all" || !settings) return;
-    const key = `${yearCursor}-${String(monthIdx + 1).padStart(2, "0")}`;
-    const idx = yearCursor * 12 + monthIdx;
+    const key = `${year}-${String(monthIdx + 1).padStart(2, "0")}`;
+    const idx = year * 12 + monthIdx;
     const openIdx = monthKeyToIdx(settings.monthKey);
     if (idx <= openIdx) return;
     const entry = entriesMap[key];
@@ -4821,7 +4791,6 @@ function CashflowApp({ session, onBack }) {
   }
 
   const todayIdx = (() => { const d = new Date(); return d.getFullYear() * 12 + d.getMonth(); })();
-  const fmtSavingRate = (p) => `${p > 0 ? "+" : ""}${p.toFixed(1)}%`;
 
   return (
     <div style={{ height: "100dvh", width: "100%", background: "#FFFFFF", overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -4844,11 +4813,98 @@ function CashflowApp({ session, onBack }) {
           </div>
         ) : (
           <>
-            <div className="no-scrollbar" style={{ display: "flex", gap: 6, marginBottom: 10, flexShrink: 0, overflowX: "auto" }}>
-              <button onClick={() => setActiveAccountId("all")} style={{ padding: "6px 14px", borderRadius: "var(--radius-pill)", border: activeAccountId === "all" ? "1px solid var(--color-primary)" : "1.5px solid var(--color-heading)", background: activeAccountId === "all" ? "var(--color-primary)" : "#FFFFFF", color: activeAccountId === "all" ? "#FFFFFF" : "var(--color-heading)", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>Totale</button>
-              {accounts.map((a) => (
-                <button key={a.id} onClick={() => setActiveAccountId(a.id)} style={{ padding: "6px 12px", borderRadius: "var(--radius-pill)", border: activeAccountId === a.id ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: activeAccountId === a.id ? "var(--color-primary)" : "#FFFFFF", color: activeAccountId === a.id ? "#FFFFFF" : "var(--color-primary)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>{a.name}</button>
-              ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexShrink: 0 }}>
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button onClick={() => setViewMenuOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-bg-tint)", color: "var(--color-primary)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  {viewMode === "monthly" ? "Mensile" : "Annuale"} <ChevronDown size={13} />
+                </button>
+                {viewMenuOpen && (
+                  <>
+                    <div onClick={() => setViewMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
+                    <div className="fade-in" style={{ position: "absolute", top: "100%", left: 0, marginTop: 6, zIndex: 40, minWidth: 130, background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 6 }}>
+                      <button onClick={() => { setViewMode("monthly"); setViewMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: viewMode === "monthly" ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>Mensile</button>
+                      <button onClick={() => { setViewMode("annual"); setViewMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: viewMode === "annual" ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>Annuale</button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 2, minWidth: 0 }}>
+                {viewMode === "monthly" ? (
+                  <>
+                    <button onClick={() => goMonthCursor(-1)} aria-label="Mese precedente" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronLeft size={16} /></button>
+                    <span onClick={() => { setPickerYear(monthCursor.year); setDatePickerOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: "var(--color-border-light)", whiteSpace: "nowrap", textTransform: "capitalize", cursor: "pointer" }}>
+                      <Calendar size={13} /> {MESI[monthCursor.month].slice(0, 3)} {String(monthCursor.year).slice(-2)}
+                    </span>
+                    <button onClick={() => goMonthCursor(1)} aria-label="Mese successivo" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronRight size={16} /></button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => setYearCursor((y) => y - 1)} aria-label="Anno precedente" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronLeft size={16} /></button>
+                    <span onClick={() => { setPickerYear(yearCursor); setDatePickerOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: "var(--color-border-light)", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      <Calendar size={13} /> {yearCursor}
+                    </span>
+                    <button onClick={() => setYearCursor((y) => y + 1)} aria-label="Anno successivo" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronRight size={16} /></button>
+                  </>
+                )}
+
+                {datePickerOpen && (
+                  <>
+                    <div onClick={() => setDatePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
+                    <div className="fade-in" style={{ position: "absolute", top: "100%", left: "50%", transform: "translateX(-50%)", marginTop: 6, zIndex: 40 }}>
+                      <div style={{ width: 220, background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 14 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: viewMode === "monthly" ? 10 : 0 }}>
+                          <button onClick={() => setPickerYear((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronLeft size={18} /></button>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-heading)" }}>{pickerYear}</div>
+                          <button onClick={() => setPickerYear((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronRight size={18} /></button>
+                        </div>
+                        {viewMode === "monthly" ? (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                            {MESI.map((m, i) => {
+                              const isSelected = pickerYear === monthCursor.year && i === monthCursor.month;
+                              return (
+                                <button key={m} onClick={() => { setMonthCursor({ year: pickerYear, month: i }); setDatePickerOpen(false); }} className="text-xs" style={{ padding: "9px 0", borderRadius: "var(--radius-sm)", border: isSelected ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: isSelected ? "var(--color-primary)" : "#FFFFFF", color: isSelected ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
+                                  {m.slice(0, 3)}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <button onClick={() => { setYearCursor(pickerYear); setDatePickerOpen(false); }} className="btn-primary" style={{ width: "100%", marginTop: 10, padding: "9px 0", borderRadius: "var(--radius-sm)", fontSize: 13.5 }}>
+                            Vai al {pickerYear}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", background: "var(--color-bg-tint)", borderRadius: "var(--radius-pill)", padding: 3, gap: 2, flexShrink: 0 }}>
+                <button onClick={() => setDisplayStyle("list")} aria-label="Vista elenco" style={{ width: 26, height: 22, borderRadius: "var(--radius-pill)", border: "none", background: displayStyle === "list" ? "var(--color-primary)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <List size={13} color={displayStyle === "list" ? "#FFFFFF" : "var(--color-primary)"} />
+                </button>
+                <button onClick={() => setDisplayStyle("dashboard")} aria-label="Vista dashboard" style={{ width: 26, height: 22, borderRadius: "var(--radius-pill)", border: "none", background: displayStyle === "dashboard" ? "var(--color-primary)" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+                  <BarChart3 size={13} color={displayStyle === "dashboard" ? "#FFFFFF" : "var(--color-primary)"} />
+                </button>
+              </div>
+
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button onClick={() => setAcctMenuOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-bg-tint)", color: "var(--color-primary)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {activeAccountId === "all" ? "Totale" : (accounts.find((a) => a.id === activeAccountId)?.name || "")} <ChevronDown size={13} style={{ flexShrink: 0 }} />
+                </button>
+                {acctMenuOpen && (
+                  <>
+                    <div onClick={() => setAcctMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
+                    <div className="fade-in" style={{ position: "absolute", top: "100%", right: 0, marginTop: 6, zIndex: 40, minWidth: 160, background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 6 }}>
+                      <button onClick={() => { setActiveAccountId("all"); setAcctMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: activeAccountId === "all" ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>Totale</button>
+                      {accounts.map((a) => (
+                        <button key={a.id} onClick={() => { setActiveAccountId(a.id); setAcctMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: activeAccountId === a.id ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>{a.name}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {activeAccountId !== "all" && !settings ? (
@@ -4860,25 +4916,8 @@ function CashflowApp({ session, onBack }) {
               </div>
             ) : (
               <>
-                <div style={{ display: "flex", justifyContent: "center", padding: "0 0 10px", flexShrink: 0 }}>
-                  <div style={{ display: "flex", background: "var(--color-bg-tint)", borderRadius: "var(--radius-md)", padding: 3, width: "100%", maxWidth: 280 }}>
-                    <button onClick={() => setViewMode("monthly")} style={{ flex: 1, padding: "5px 0", borderRadius: "var(--radius-sm)", border: "none", background: viewMode === "monthly" ? "#FFFFFF" : "transparent", color: viewMode === "monthly" ? "var(--color-primary)" : "var(--color-primary)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: viewMode === "monthly" ? "0 1px 4px rgba(5,91,101,0.1)" : "none" }}>
-                      Mensile
-                    </button>
-                    <button onClick={() => setViewMode("annual")} style={{ flex: 1, padding: "5px 0", borderRadius: "var(--radius-sm)", border: "none", background: viewMode === "annual" ? "#FFFFFF" : "transparent", color: viewMode === "annual" ? "var(--color-primary)" : "var(--color-primary)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: viewMode === "annual" ? "0 1px 4px rgba(5,91,101,0.1)" : "none" }}>
-                      Annuale
-                    </button>
-                  </div>
-                </div>
-
-                {viewMode === "monthly" ? (
+                {viewMode === "annual" ? (
                   <>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-                  <button onClick={() => setYearCursor((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "var(--color-heading)" }}><ChevronLeft size={28} /></button>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "var(--color-heading)" }}>{yearCursor}</div>
-                  <button onClick={() => setYearCursor((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "var(--color-heading)" }}><ChevronRight size={28} /></button>
-                </div>
-
                 {activeAccountId === "all" ? (
                   <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--color-border-light)", padding: "2px 0 12px", borderBottom: "1px solid var(--color-border)", marginBottom: 10, flexShrink: 0 }}>
                     Vista aggregata di tutti i conti — seleziona un conto per modificare i dati
@@ -4903,20 +4942,14 @@ function CashflowApp({ session, onBack }) {
                   </div>
                 )}
 
-                <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-                <div className="scrollbar-thin" style={{ height: "100%", overflowY: "auto", overflowX: "auto" }}>
-                  <div style={{ width: 514 }}>
-                    <div style={{ display: "flex", alignItems: "center", padding: "0 4px 6px" }}>
-                      <div style={{ width: 42, flexShrink: 0, position: "sticky", left: 0, background: "#FFFFFF", zIndex: 2 }} />
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Entrate</div>
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Invest.</div>
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Spese</div>
-                      <div style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Net Inc.</div>
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saving</div>
-                      <div style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Sav. %</div>
-                      <div style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saldo</div>
-                    </div>
-
+                {displayStyle === "dashboard" ? (
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "20px 10px" }}>
+                    <BarChart3 size={34} color="var(--color-border-light)" style={{ marginBottom: 12 }} />
+                    <div style={{ fontSize: 14, color: "var(--color-primary)" }}>Vista Dashboard annuale in arrivo.</div>
+                  </div>
+                ) : (
+                <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+                  <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, paddingBottom: 4 }}>
                     {yearRows.map((r) => {
                       const idx = yearCursor * 12 + r.monthIdx;
                       const openIdx = settings ? monthKeyToIdx(settings.monthKey) : -Infinity;
@@ -4924,72 +4957,222 @@ function CashflowApp({ session, onBack }) {
                       const isFuture = idx > todayIdx;
                       const rowOpacity = (activeAccountId !== "all" && idx <= openIdx) ? 0.3 : (isFuture ? 0.55 : 1);
                       return (
-                        <div key={r.key} onClick={() => !disabled && openRow(r.monthIdx)} className={disabled ? "" : "row-hover"} style={{ display: "flex", alignItems: "center", padding: "8px 4px", borderBottom: "1px dotted var(--color-bg-tint)", cursor: disabled ? "default" : "pointer" }}>
-                          <div style={{ width: 42, flexShrink: 0, fontSize: 12, color: "var(--color-primary)", textTransform: "capitalize", position: "sticky", left: 0, background: "#FFFFFF", zIndex: 1, opacity: rowOpacity }}>{MESI[r.monthIdx].slice(0, 3)}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-success)", opacity: rowOpacity }}>{r.hasEntry ? <Money>{fmtEUR(r.income)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-primary)", opacity: rowOpacity }}>{r.hasEntry ? <Money>{fmtEUR(r.investments)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-danger)", opacity: rowOpacity }}>{r.hasEntry ? <Money>{fmtEUR(r.expenses)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.netIncome === null ? "var(--color-border-light)" : (r.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)"), opacity: rowOpacity }}>{r.netIncome !== null ? <Money>{fmtEUR(r.netIncome)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)"), opacity: rowOpacity }}>{r.saving !== null ? <Money>{fmtEUR(r.saving)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 10.5, fontWeight: 600, color: r.savingRate === null ? "var(--color-border-light)" : (r.savingRate >= 0 ? "var(--color-success)" : "var(--color-danger)"), opacity: rowOpacity }}>{r.savingRate !== null ? fmtSavingRate(r.savingRate) : "—"}</div>
-                          <div className="mono" style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 12.5, fontWeight: 700, color: "var(--color-heading)", opacity: rowOpacity }}>
-                            {r.bankBalance !== null && r.bankBalance !== undefined ? <Money>{fmtEUR(r.bankBalance)}</Money> : <span style={{ color: "var(--color-border-light)", fontWeight: 400 }}>—</span>}
-                            {r.manualOverride && <Pencil size={9} color="var(--color-warning)" style={{ marginLeft: 3, verticalAlign: "middle" }} />}
+                        <div key={r.key} onClick={() => !disabled && openRow(r.monthIdx)} className="card-item" style={{ flexDirection: "column", alignItems: "stretch", cursor: disabled ? "default" : "pointer", opacity: rowOpacity, flexShrink: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: r.hasEntry ? 8 : 0 }}>
+                            <span className="text-lg" style={{ textTransform: "capitalize" }}>{MESI[r.monthIdx]}</span>
+                            {r.hasEntry && (
+                              <div style={{ textAlign: "right" }}>
+                                <div style={{ fontSize: 10.5, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Risparmiato</div>
+                                <div className="mono" style={{ fontSize: 16, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>
+                                  {r.saving !== null ? <Money>{r.saving > 0 ? "+" : ""}{fmtEUR(r.saving)}</Money> : "—"}
+                                </div>
+                              </div>
+                            )}
                           </div>
+                          {r.hasEntry ? (
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Entrate</div>
+                                <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-success)" }}><Money>+{fmtEUR(r.income)}</Money></div>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Investito</div>
+                                <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-primary)" }}><Money>{fmtEUR(r.investments)}</Money></div>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Uscite</div>
+                                <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-danger)" }}><Money>-{fmtEUR(r.expenses)}</Money></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12.5, color: "var(--color-border-light)" }}>Nessun dato per questo mese</div>
+                          )}
                         </div>
                       );
                     })}
+                  </div>
 
-                    <div style={{ display: "flex", alignItems: "center", padding: "10px 4px", marginTop: 6, background: "var(--color-bg-tint)", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)" }}>
-                      <div style={{ width: 42, flexShrink: 0, fontSize: 11.5, fontWeight: 700, color: "var(--color-heading)", position: "sticky", left: 0, background: "var(--color-bg-tint)", zIndex: 1 }}>Tot.</div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--color-success)" }}><Money>{fmtEUR(yearTotals.income)}</Money></div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--color-primary)" }}><Money>{fmtEUR(yearTotals.investments)}</Money></div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--color-danger)" }}><Money>{fmtEUR(yearTotals.expenses)}</Money></div>
-                      <div className="mono" style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: yearTotals.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)" }}><Money>{fmtEUR(yearTotals.netIncome)}</Money></div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: yearTotals.saving >= 0 ? "var(--color-success)" : "var(--color-danger)" }}><Money>{fmtEUR(yearTotals.saving)}</Money></div>
-                      <div className="mono" style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 10.5, fontWeight: 700, color: yearTotals.savingRate === null ? "var(--color-border-light)" : (yearTotals.savingRate >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{yearTotals.savingRate !== null ? fmtSavingRate(yearTotals.savingRate) : "—"}</div>
-                      <div className="mono" style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 13, fontWeight: 700, color: "var(--color-heading)" }}>{yearTotals.finalBalance !== null ? <Money>{fmtEUR(yearTotals.finalBalance)}</Money> : "—"}</div>
+                  <div className="card-item" style={{ marginTop: 8, flexDirection: "column", alignItems: "stretch", background: "var(--color-heading)", flexShrink: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                      <span className="text-lg" style={{ color: "#FFFFFF" }}>Totale {yearCursor}</span>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Risparmiato</div>
+                        <div className="mono" style={{ fontSize: 16, fontWeight: 600, color: yearTotals.saving >= 0 ? "var(--color-success)" : "#FFB4A8" }}>
+                          <Money>{yearTotals.saving > 0 ? "+" : ""}{fmtEUR(yearTotals.saving)}</Money>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Entrate</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}><Money>+{fmtEUR(yearTotals.income)}</Money></div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Investito</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}><Money>{fmtEUR(yearTotals.investments)}</Money></div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Uscite</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}><Money>-{fmtEUR(yearTotals.expenses)}</Money></div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div style={{ position: "absolute", top: 0, right: 0, bottom: 8, width: 20, background: "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.95))", pointerEvents: "none" }} />
-                </div>
+                )}
                   </>
                 ) : (
-                  <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-                <div className="scrollbar-thin" style={{ height: "100%", overflowY: "auto", overflowX: "auto" }}>
-                    <div style={{ width: 514 }}>
-                      <div style={{ display: "flex", alignItems: "center", padding: "0 4px 6px" }}>
-                        <div style={{ width: 42, flexShrink: 0, fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600, position: "sticky", left: 0, background: "#FFFFFF", zIndex: 2 }}>Anno</div>
-                        <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Entrate</div>
-                        <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Invest.</div>
-                        <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Spese</div>
-                        <div style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Net Inc.</div>
-                        <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saving</div>
-                        <div style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Sav. %</div>
-                        <div style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saldo</div>
+                  <>
+                    {activeAccountId === "all" ? (
+                      <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--color-border-light)", padding: "2px 0 12px", borderBottom: "1px solid var(--color-border)", marginBottom: 10, flexShrink: 0 }}>
+                        Vista aggregata di tutti i conti — seleziona un conto per modificare i dati
                       </div>
+                    ) : openingInfo ? (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap", fontSize: 12.5, color: openingInfo.missing ? "var(--color-warning)" : "var(--color-primary)", padding: "2px 0 12px", borderBottom: "1px solid var(--color-border)", marginBottom: 10, flexShrink: 0 }}>
+                        {openingInfo.missing && <AlertTriangle size={13} style={{ flexShrink: 0 }} />}
+                        {openingInfo.missing ? (
+                          <span>Saldo di <span style={{ textTransform: "capitalize" }}>{fmtMonthYear(openingInfo.key)}</span> non ancora disponibile</span>
+                        ) : (
+                          <span>Si parte da <span style={{ textTransform: "capitalize" }}>{fmtMonthYear(openingInfo.key)}</span>: <b className="mono" style={{ color: "var(--color-heading)" }}><Money>{fmtEUR(openingInfo.value)}</Money></b></span>
+                        )}
+                        {openingInfo.isOpening && (
+                          <button onClick={() => setConfirmEditOpening(true)} aria-label="Modifica saldo di apertura" style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 }}>
+                            <Pencil size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--color-border-light)", padding: "2px 0 12px", borderBottom: "1px solid var(--color-border)", marginBottom: 10, flexShrink: 0 }}>
+                        Il tracciamento inizia da <span style={{ textTransform: "capitalize" }}>{fmtMonthYear(settings.monthKey)}</span>.
+                      </div>
+                    )}
 
-                      {annualRows.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "30px 10px", fontSize: 13.5, color: "var(--color-primary)" }}>Nessun dato disponibile.</div>
-                      ) : annualRows.map((r) => (
-                        <div key={r.year} onClick={() => { setYearCursor(r.year); setViewMode("monthly"); }} className="row-hover" style={{ display: "flex", alignItems: "center", padding: "10px 4px", borderBottom: "1px dotted var(--color-bg-tint)", cursor: "pointer" }}>
-                          <div className="text-xs" style={{ width: 42, flexShrink: 0, color: "var(--color-heading)", position: "sticky", left: 0, background: "#FFFFFF", zIndex: 1 }}>{r.year}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-success)" }}>{r.hasData ? <Money>{fmtEUR(r.income)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-primary)" }}>{r.hasData ? <Money>{fmtEUR(r.investments)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-danger)" }}>{r.hasData ? <Money>{fmtEUR(r.expenses)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.netIncome === null ? "var(--color-border-light)" : (r.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{r.netIncome !== null ? <Money>{fmtEUR(r.netIncome)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{r.saving !== null ? <Money>{fmtEUR(r.saving)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 10.5, fontWeight: 600, color: r.savingRate === null ? "var(--color-border-light)" : (r.savingRate >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{r.savingRate !== null ? fmtSavingRate(r.savingRate) : "—"}</div>
-                          <div className="mono" style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 13, fontWeight: 700, color: "var(--color-heading)" }}>
-                            {r.finalBalance !== null ? <Money>{fmtEUR(r.finalBalance)}</Money> : <span style={{ color: "var(--color-border-light)", fontWeight: 400 }}>—</span>}
+                    {displayStyle === "dashboard" ? (() => {
+                      const r = singleMonthRow;
+                      const p = prevMonthRow;
+                      if (!r.hasEntry) {
+                        return (
+                          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "20px 10px" }}>
+                            <BarChart3 size={34} color="var(--color-border-light)" style={{ marginBottom: 12 }} />
+                            <div style={{ fontSize: 14, color: "var(--color-primary)" }}>Nessun dato per questo mese. Passa a "Elenco" per inserirli.</div>
+                          </div>
+                        );
+                      }
+                      const incomeChange = pctChange(r.income, p.income);
+                      const expChange = pctChange(r.expenses, p.expenses);
+                      const investChange = pctChange(r.investments, p.investments);
+                      const ringPct = (r.savingRate !== null && r.savingRate > 0) ? Math.min(r.savingRate, 100) : 0;
+                      return (
+                        <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingBottom: 4 }}>
+                          <div className="section-label" style={{ textAlign: "left", margin: "4px 0 8px" }}>I tuoi movimenti</div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                            <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                <span className="text-sm" style={{ color: "var(--color-heading)" }}>Entrate</span>
+                                <div style={{ width: 22, height: 22, borderRadius: "var(--radius-pill)", background: "var(--color-success-bg, #E9FBF3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  {incomeChange !== null && incomeChange < 0 ? <TrendingDown size={12} color="var(--color-danger)" /> : <TrendingUp size={12} color="var(--color-success)" />}
+                                </div>
+                              </div>
+                              <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: "var(--color-success)", marginBottom: 4 }}><Money>{fmtEUR(r.income)}</Money></div>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                                <span style={{ color: "var(--color-border-light)" }}>vs mese prec.</span>
+                                <span className="mono" style={{ fontWeight: 600, color: incomeChange === null ? "var(--color-border-light)" : (incomeChange >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{incomeChange !== null ? fmtPct(incomeChange) : "—"}</span>
+                              </div>
+                            </div>
+
+                            <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                <span className="text-sm" style={{ color: "var(--color-heading)" }}>Investito</span>
+                                <div style={{ width: 22, height: 22, borderRadius: "var(--radius-pill)", background: "#EAF2F3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  {investChange !== null && investChange < 0 ? <TrendingDown size={12} color="var(--color-primary)" /> : <TrendingUp size={12} color="var(--color-primary)" />}
+                                </div>
+                              </div>
+                              <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: "var(--color-primary)", marginBottom: 4 }}><Money>{fmtEUR(r.investments)}</Money></div>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                                <span style={{ color: "var(--color-border-light)" }}>vs mese prec.</span>
+                                <span className="mono" style={{ fontWeight: 600, color: "var(--color-primary)" }}>{investChange !== null ? fmtPct(investChange) : "—"}</span>
+                              </div>
+                            </div>
+
+                            <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                <span className="text-sm" style={{ color: "var(--color-heading)" }}>Uscite</span>
+                                <div style={{ width: 22, height: 22, borderRadius: "var(--radius-pill)", background: "var(--color-danger-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  {expChange !== null && expChange < 0 ? <TrendingDown size={12} color="var(--color-success)" /> : <TrendingUp size={12} color="var(--color-danger)" />}
+                                </div>
+                              </div>
+                              <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: "var(--color-danger)", marginBottom: 4 }}><Money>{fmtEUR(r.expenses)}</Money></div>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                                <span style={{ color: "var(--color-border-light)" }}>vs mese prec.</span>
+                                <span className="mono" style={{ fontWeight: 600, color: expChange === null ? "var(--color-border-light)" : (expChange <= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{expChange !== null ? fmtPct(expChange) : "—"}</span>
+                              </div>
+                            </div>
+
+                            <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                <span className="text-sm" style={{ color: "var(--color-heading)" }}>Saldo netto</span>
+                              </div>
+                              <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: r.netIncome === null ? "var(--color-border-light)" : (r.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)"), marginBottom: 4 }}>{r.netIncome !== null ? <Money>{fmtEUR(r.netIncome)}</Money> : "—"}</div>
+                              <div style={{ fontSize: 10.5, color: "var(--color-border-light)" }}>variazione conto</div>
+                            </div>
+                          </div>
+
+                          <div className="section-label" style={{ textAlign: "left", margin: "4px 0 8px" }}>Il risultato del mese</div>
+                          <div className="card-item" style={{ justifyContent: "space-between" }}>
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Risparmiato</div>
+                              <div className="mono" style={{ fontSize: 24, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{r.saving !== null ? <Money>{r.saving > 0 ? "+" : ""}{fmtEUR(r.saving)}</Money> : "—"}</div>
+                              {r.savingRate !== null && <div style={{ fontSize: 11.5, color: "var(--color-border-light)", marginTop: 4 }}>{fmtPct(r.savingRate)} delle entrate</div>}
+                            </div>
+                            <div style={{ width: 58, height: 58, borderRadius: "50%", background: `conic-gradient(var(--color-success) 0% ${ringPct}%, var(--color-border) ${ringPct}% 100%)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <div className="mono" style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--color-bg-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--color-heading)" }}>{Math.round(ringPct)}%</div>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                <div style={{ position: "absolute", top: 0, right: 0, bottom: 8, width: 20, background: "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.95))", pointerEvents: "none" }} />
-                </div>
+                      );
+                    })() : (() => {
+                      const r = singleMonthRow;
+                      const idx = monthCursor.year * 12 + monthCursor.month;
+                      const openIdx = settings ? monthKeyToIdx(settings.monthKey) : -Infinity;
+                      const disabled = activeAccountId === "all" || idx <= openIdx;
+                      const isFuture = idx > todayIdx;
+                      const rowOpacity = (activeAccountId !== "all" && idx <= openIdx) ? 0.3 : (isFuture ? 0.55 : 1);
+                      return (
+                        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+                          <div onClick={() => !disabled && openRow(r.monthIdx, monthCursor.year)} className="card-item" style={{ flexDirection: "column", alignItems: "stretch", cursor: disabled ? "default" : "pointer", opacity: rowOpacity, flexShrink: 0 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: r.hasEntry ? 8 : 0 }}>
+                              <span className="text-lg" style={{ textTransform: "capitalize" }}>{MESI[r.monthIdx]}</span>
+                              {r.hasEntry && (
+                                <div style={{ textAlign: "right" }}>
+                                  <div style={{ fontSize: 10.5, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Risparmiato</div>
+                                  <div className="mono" style={{ fontSize: 16, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>
+                                    {r.saving !== null ? <Money>{r.saving > 0 ? "+" : ""}{fmtEUR(r.saving)}</Money> : "—"}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            {r.hasEntry ? (
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Entrate</div>
+                                  <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-success)" }}><Money>+{fmtEUR(r.income)}</Money></div>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Investito</div>
+                                  <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-primary)" }}><Money>{fmtEUR(r.investments)}</Money></div>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Uscite</div>
+                                  <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-danger)" }}><Money>-{fmtEUR(r.expenses)}</Money></div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ fontSize: 12.5, color: "var(--color-border-light)" }}>{disabled ? "Nessun dato per questo mese" : "Tocca per inserire i dati di questo mese"}</div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </>
                 )}
               </>
             )}
