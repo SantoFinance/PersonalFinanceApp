@@ -39,6 +39,51 @@
 .select-field { width: 100%; padding: 6px 8px; border-radius: 7px; border: 1px solid var(--color-border); font-size: 16px; color: var(--color-heading); background: #FFFFFF; }
 .card-item { display: flex; align-items: center; padding: 11px 16px; border-radius: var(--radius-xl); background: var(--color-bg-tint); }
 .card-item-icon { width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--color-bg-tint); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.asset-list-card {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  min-height: 96px; padding: 13px 14px; border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg); background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(5,91,101,0.055);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.asset-list-card[data-clickable="true"] { cursor: pointer; }
+.asset-list-card[data-clickable="true"]:hover {
+  transform: translateY(-1px); border-color: var(--color-border-light);
+  box-shadow: 0 5px 14px rgba(5,91,101,0.09);
+}
+.asset-list-card[data-clickable="true"]:active { transform: translateY(0); box-shadow: 0 2px 7px rgba(5,91,101,0.07); }
+.asset-list-icon {
+  width: 42px; height: 42px; border-radius: var(--radius-md);
+  background: var(--color-bg-tint); border: 1px solid rgba(69,130,139,0.10);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.asset-list-content { flex: 1; min-width: 0; }
+.asset-list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.asset-list-name {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 15.5px; font-weight: 700; color: var(--color-heading);
+}
+.asset-list-value { flex-shrink: 0; font-size: 16px; font-weight: 700; color: var(--color-heading); }
+.asset-list-details { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 9px; }
+.asset-list-metrics { min-width: 0; }
+.asset-list-metric-label { margin-bottom: 2px; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-border-light); }
+.asset-list-gain { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
+.asset-list-weight { margin-top: 5px; font-size: 11px; color: var(--color-primary); }
+.asset-list-trend { display: flex; align-items: center; justify-content: flex-end; min-width: 82px; }
+.asset-list-chevron { flex-shrink: 0; margin-left: -3px; }
+.asset-list-empty { margin-top: 5px; font-size: 12.5px; line-height: 1.4; color: var(--color-border-light); }
+@media (prefers-reduced-motion: reduce) { .asset-list-card { transition: none !important; } }
+.dashboard-card-transition {
+  transform-origin: center top;
+  animation: dashboardCardQuick 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes dashboardCardQuick {
+  from { opacity: 0.88; transform: translateY(-2px) scale(0.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-card-transition { animation: none !important; transition: none !important; }
+}
 .progress-track { height: 6px; background: #FFFFFF; border-radius: var(--radius-xs); overflow: hidden; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(5,91,101,0.35); }
 .modal-panel { position: fixed; left: 20px; right: 20px; bottom: 24px; max-width: 520px; margin: 0 auto; background: #FFFFFF; border-radius: var(--radius-panel); padding: 18px; box-shadow: 0 12px 32px rgba(5,91,101,0.22); }
@@ -228,27 +273,120 @@ function Money({ children, className, style }) {
     </span>
   );
 }
-function Sparkline({ values, color = "var(--color-primary)", width = 72, height = 26, style }) {
+function Sparkline({ values, color = "var(--color-primary)", width = 82, height = 34, style, endLabel = null, endLabelColor = null }) {
   if (!values || values.length < 2) return null;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  const cleanValues = values.filter((v) => Number.isFinite(v));
+  if (cleanValues.length < 2) return null;
+
+  const labelBand = endLabel ? 13 : 0;
+  const chartTop = 3 + labelBand;
+  const chartBottom = height - 3;
+  const minValue = Math.min(...cleanValues);
+  const maxValue = Math.max(...cleanValues);
+  const rawRange = maxValue - minValue;
+  const scalePad = rawRange > 0 ? rawRange * 0.18 : Math.max(Math.abs(maxValue) * 0.06, 1);
+  const min = minValue - scalePad;
+  const max = maxValue + scalePad;
   const range = max - min || 1;
-  const stepX = values.length > 1 ? width / (values.length - 1) : 0;
-  const points = values.map((v, i) => {
-    const x = i * stepX;
-    const y = height - 2 - ((v - min) / range) * (height - 4);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  }).join(" ");
+  const graphWidth = width - 2;
+  const stepX = graphWidth / (cleanValues.length - 1);
+  const xFor = (i) => i * stepX;
+  const yFor = (v) => chartBottom - ((v - min) / range) * (chartBottom - chartTop);
+  const points = cleanValues.map((v, i) => ({ x: xFor(i), y: yFor(v) }));
+
+  const smoothPath = (() => {
+    if (points.length === 2) {
+      return `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)} L ${points[1].x.toFixed(1)} ${points[1].y.toFixed(1)}`;
+    }
+    let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)} `;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i === 0 ? 0 : i - 1];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      d += `C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} `;
+    }
+    return d.trim();
+  })();
+
+  const isPositive = color === "var(--color-success)";
+  const isNegative = color === "var(--color-danger)";
+  const fillEdgeY = isNegative ? chartTop : chartBottom;
+  const areaPath = `${smoothPath} L ${points[points.length - 1].x.toFixed(1)} ${fillEdgeY.toFixed(1)} L ${points[0].x.toFixed(1)} ${fillEdgeY.toFixed(1)} Z`;
+  const gradientId = React.useId().replace(/:/g, "");
+  const last = points[points.length - 1];
+
   return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: "block", flexShrink: 0, ...style }}>
-      <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: "block", flexShrink: 0, overflow: "visible", ...style }} aria-hidden="true">
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          {isNegative ? (
+            <>
+              <stop offset="0%" stopColor={color} stopOpacity="0.16" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.015" />
+            </>
+          ) : (
+            <>
+              <stop offset="0%" stopColor={color} stopOpacity="0.015" />
+              <stop offset="100%" stopColor={color} stopOpacity="0.16" />
+            </>
+          )}
+        </linearGradient>
+      </defs>
+      {(isPositive || isNegative) && <path d={areaPath} fill={`url(#${gradientId})`} stroke="none" />}
+      <path d={smoothPath} fill="none" stroke={color} strokeWidth="2.75" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={last.x} cy={last.y} r="5.5" fill={color} opacity="0.12" />
+      <circle cx={last.x} cy={last.y} r="3.4" fill="#FFFFFF" stroke={color} strokeWidth="1.8" />
+      <circle cx={last.x} cy={last.y} r="1.35" fill={color} />
+      {endLabel && (
+        <text x={Math.min(width - 1, last.x)} y={Math.max(8.5, last.y - 7)} fontSize="10" fontWeight="700" fill={endLabelColor || color} textAnchor="end">{endLabel}</text>
+      )}
     </svg>
   );
 }
 // Card standard per gli elenchi di portafogli/titoli/polizze/immobili: icona opzionale, nome+valore,
 // guadagno+peso% con sparkline (o messaggio "nessun dato" se hasData è false), freccia opzionale.
+// Popup condiviso per la scelta di mese+anno (griglia di 12 mesi) o del solo anno (pulsante "Vai al...").
+// Usato da tutte le pagine con un selettore data cliccabile: Le mie spese, Investimenti, Assicurazioni,
+// Immobili, Patrimonio, Flussi di cassa.
+function MonthYearPickerPopup({ pickerYear, setPickerYear, mode = "month", selectedYear, selectedMonth, onSelectMonth, onSelectYear, onClose, anchor = "stretch" }) {
+  return (
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
+      <div className="fade-in" style={{ position: "absolute", top: "100%", ...(anchor === "center" ? { left: "50%", transform: "translateX(-50%)" } : { left: 0, right: 0 }), marginTop: 6, zIndex: 40 }}>
+        <div style={{ maxWidth: 260, margin: "0 auto", background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: mode === "month" ? 10 : 0 }}>
+            <button onClick={() => setPickerYear((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronLeft size={18} /></button>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-heading)" }}>{pickerYear}</div>
+            <button onClick={() => setPickerYear((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronRight size={18} /></button>
+          </div>
+          {mode === "month" ? (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+              {MESI.map((m, i) => {
+                const isSelected = pickerYear === selectedYear && i === selectedMonth;
+                return (
+                  <button key={m} onClick={() => onSelectMonth(pickerYear, i)} className="text-xs" style={{ padding: "9px 0", borderRadius: "var(--radius-sm)", border: isSelected ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: isSelected ? "var(--color-primary)" : "#FFFFFF", color: isSelected ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
+                    {m.slice(0, 3)}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <button onClick={() => onSelectYear(pickerYear)} className="btn-primary" style={{ width: "100%", marginTop: 10, padding: "9px 0", borderRadius: "var(--radius-sm)", fontSize: 13.5 }}>
+              Vai al {pickerYear}
+            </button>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
 function ListItemCard({
-  icon: Icon, iconSize = 24,
+  icon: Icon, iconSize = 22,
   name, value, hasData = true,
   gain, gainPct, weightPct, weightLabel = "del totale",
   sparklineValues,
@@ -256,33 +394,38 @@ function ListItemCard({
   noDataMessage = "Non esisteva ancora in questo mese",
 }) {
   const gainColor = gain > 0 ? "var(--color-success)" : gain < 0 ? "var(--color-danger)" : "var(--color-border-light)";
+  const safeWeightPct = Number.isFinite(weightPct) ? weightPct : 0;
+  const clickable = typeof onClick === "function";
   return (
-    <div onClick={onClick} className="card-item" style={{ gap: 10, cursor: onClick ? "pointer" : "default", flexShrink: 0, paddingLeft: 10 }}>
+    <div onClick={onClick} className="asset-list-card" data-clickable={clickable ? "true" : "false"}>
       {Icon && (
-        <div className="card-item-icon">
-          <Icon size={iconSize} color="var(--color-primary)" />
+        <div className="asset-list-icon">
+          <Icon size={iconSize} color="var(--color-primary)" strokeWidth={2.1} />
         </div>
       )}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: hasData ? 4 : 0 }}>
-          <span className="text-lg" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-          {hasData && <span className="mono text-lg" style={{ flexShrink: 0, marginLeft: 8 }}><Money>{fmtEUR(value)}</Money></span>}
+      <div className="asset-list-content">
+        <div className="asset-list-heading">
+          <span className="asset-list-name">{name}</span>
+          {hasData && <span className="mono asset-list-value"><Money>{fmtEUR(value)}</Money></span>}
         </div>
         {hasData ? (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div>
-              <div className="mono" style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: gainColor }}>
-                <Money>{gain > 0 ? "+" : ""}{fmtEUR(gain)}</Money>{gainPct !== null && ` (${fmtPct(gainPct)})`}
+          <div className="asset-list-details">
+            <div className="asset-list-metrics">
+              <div className="asset-list-metric-label">Rendimento complessivo</div>
+              <div className="mono asset-list-gain" style={{ color: gainColor }}>
+                <Money>{gain > 0 ? "+" : ""}{fmtEUR(gain)}</Money>{gainPct !== null && ` · ${fmtPct(gainPct)}`}
               </div>
-              <div style={{ fontSize: 12, color: "var(--color-border-light)" }}>{weightPct.toFixed(0)}% {weightLabel}</div>
+              <div className="asset-list-weight">{safeWeightPct.toFixed(0)}% {weightLabel}</div>
             </div>
-            <Sparkline values={sparklineValues} color={gainColor} style={{ marginLeft: 10 }} />
+            <div className="asset-list-trend">
+              <Sparkline values={sparklineValues} color={gainColor} width={82} height={32} />
+            </div>
           </div>
         ) : (
-          <div style={{ fontSize: 12.5, color: "var(--color-border-light)" }}>{noDataMessage}</div>
+          <div className="asset-list-empty">{noDataMessage}</div>
         )}
       </div>
-      {showChevron && <ChevronRight size={16} color="var(--color-border-light)" style={{ flexShrink: 0 }} />}
+      {(showChevron || clickable) && <ChevronRight className="asset-list-chevron" size={17} color="var(--color-border-light)" strokeWidth={2.2} />}
     </div>
   );
 }
@@ -1176,28 +1319,12 @@ function MainApp({ session, onBack }) {
               <button onClick={() => goPeriod(1)} aria-label="Periodo successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "var(--color-heading)", flexShrink: 0 }}><ChevronRight size={32} /></button>
 
               {datePickerOpen && (
-                <>
-                  <div onClick={() => setDatePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
-                  <div className="fade-in" style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, zIndex: 40 }}>
-                    <div style={{ maxWidth: 260, margin: "0 auto", background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 14 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                        <button onClick={() => setPickerYear((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronLeft size={18} /></button>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-heading)" }}>{pickerYear}</div>
-                        <button onClick={() => setPickerYear((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronRight size={18} /></button>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-                        {MESI.map((m, i) => {
-                          const isSelected = pickerYear === cursor.year && i === cursor.month;
-                          return (
-                            <button key={m} onClick={() => { setCursor({ year: pickerYear, month: i }); setDatePickerOpen(false); }} className="text-xs" style={{ padding: "9px 0", borderRadius: "var(--radius-sm)", border: isSelected ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: isSelected ? "var(--color-primary)" : "#FFFFFF", color: isSelected ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
-                              {m.slice(0, 3)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </>
+                <MonthYearPickerPopup
+                  pickerYear={pickerYear} setPickerYear={setPickerYear}
+                  selectedYear={cursor.year} selectedMonth={cursor.month}
+                  onSelectMonth={(y, m) => { setCursor({ year: y, month: m }); setDatePickerOpen(false); }}
+                  onClose={() => setDatePickerOpen(false)}
+                />
               )}
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 10, flexShrink: 0 }}>
@@ -1609,8 +1736,8 @@ function MainApp({ session, onBack }) {
 
 function CapitalChart({ months, market, cost, futureFromMonth }) {
   const { hideAmounts } = usePrivacy();
-  const width = 460, height = 190;
-  const padding = { top: 14, right: 12, bottom: 26, left: 4 };
+  const width = 460, height = 238;
+  const padding = { top: 16, right: 14, bottom: 30, left: 44 };
   const innerW = width - padding.left - padding.right;
   const innerH = height - padding.top - padding.bottom;
   const svgRef = useRef(null);
@@ -1628,24 +1755,59 @@ function CapitalChart({ months, market, cost, futureFromMonth }) {
   const rawMax = Math.max(...allValues);
   const rawMin = Math.min(...allValues);
   const rawRange = rawMax - rawMin || Math.abs(rawMax) || 1;
-  const pad = rawRange * 0.12;
-  const maxV = rawMax + pad;
-  const minV = rawMin - pad;
+  const valuePad = rawRange * 0.12;
+  const maxV = rawMax + valuePad;
+  const minV = Math.max(0, rawMin - valuePad);
   const range = maxV - minV || 1;
   const xStep = innerW / (months.length - 1);
   const xFor = (i) => padding.left + i * xStep;
   const yFor = (v) => padding.top + innerH - ((v - minV) / range) * innerH;
+
   const pathForRange = (series, startIdx, endIdx) => {
-    let d = "";
-    for (let i = startIdx; i <= endIdx; i++) d += `${i === startIdx ? "M" : "L"} ${xFor(i).toFixed(1)} ${yFor(series[i]).toFixed(1)} `;
+    const pts = [];
+    for (let i = startIdx; i <= endIdx; i++) pts.push({ x: xFor(i), y: yFor(series[i]) });
+    if (pts.length < 2) return "";
+    if (pts.length === 2) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;
+    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} `;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i === 0 ? 0 : i - 1];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2 < pts.length ? i + 2 : i + 1];
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      d += `C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} `;
+    }
     return d.trim();
+  };
+
+  const areaForRange = (series, startIdx, endIdx) => {
+    const line = pathForRange(series, startIdx, endIdx);
+    if (!line) return "";
+    const baseline = height - padding.bottom;
+    return `${line} L ${xFor(endIdx).toFixed(1)} ${baseline.toFixed(1)} L ${xFor(startIdx).toFixed(1)} ${baseline.toFixed(1)} Z`;
   };
 
   const futureIdx = futureFromMonth ? months.findIndex((m) => m > futureFromMonth) : -1;
   const hasFuture = futureIdx > 0 && futureIdx < months.length;
-  const splitX = hasFuture ? (xFor(futureIdx - 1) + xFor(futureIdx)) / 2 : null;
-
+  const actualEndIdx = hasFuture ? futureIdx - 1 : months.length - 1;
+  const currentMonthIndex = futureFromMonth ? months.lastIndexOf(futureFromMonth) : actualEndIdx;
+  const highlightIdx = currentMonthIndex >= 0 ? currentMonthIndex : actualEndIdx;
+  const splitX = hasFuture ? xFor(actualEndIdx) : null;
+  const estimatedStartX = hasFuture ? splitX + 1 : null;
+  const showAllPoints = months.length <= 6;
   const labelEvery = Math.max(1, Math.ceil(months.length / 6));
+
+  const fmtAxis = (v) => {
+    const abs = Math.abs(v);
+    if (abs >= 1000000) return `€${(v / 1000000).toFixed(abs >= 10000000 ? 0 : 1)}M`;
+    if (abs >= 1000) return `€${Math.round(v / 1000)}k`;
+    return `€${Math.round(v)}`;
+  };
+
+  const gridValues = [0, 0.5, 1].map((ratio) => minV + range * ratio);
 
   const indexFromClientX = (clientX) => {
     const svg = svgRef.current;
@@ -1656,7 +1818,6 @@ function CapitalChart({ months, market, cost, futureFromMonth }) {
     const idx = Math.round((relX - padding.left) / xStep);
     return Math.min(months.length - 1, Math.max(0, idx));
   };
-
   const handlePointerDown = (e) => {
     e.currentTarget.setPointerCapture?.(e.pointerId);
     const idx = indexFromClientX(e.clientX);
@@ -1672,114 +1833,210 @@ function CapitalChart({ months, market, cost, futureFromMonth }) {
   let tooltip = null;
   if (activeIndex !== null) {
     const tx = xFor(activeIndex);
-    const boxW = 150, boxH = 60;
-    let boxX = tx - boxW / 2;
-    if (boxX < 2) boxX = 2;
-    if (boxX + boxW > width - 2) boxX = width - 2 - boxW;
-    const boxY = padding.top + 2;
+    const marketValue = market[activeIndex];
+    const costValue = cost[activeIndex];
+    const difference = marketValue - costValue;
+    const performance = costValue > 0 ? (difference / costValue) * 100 : null;
+    const boxW = 184, boxH = 88;
+    let boxX = tx + 10;
+    if (boxX + boxW > width - 3) boxX = tx - boxW - 10;
+    if (boxX < 3) boxX = 3;
+    const boxY = 5;
     tooltip = (
       <g pointerEvents="none">
-        <line x1={tx} y1={padding.top} x2={tx} y2={height - padding.bottom} stroke="var(--color-heading)" strokeWidth="1" strokeDasharray="3 3" opacity="0.35" />
-        <circle cx={tx} cy={yFor(cost[activeIndex])} r="4.5" fill="var(--color-border-light)" stroke="#FFFFFF" strokeWidth="1.5" />
-        <circle cx={tx} cy={yFor(market[activeIndex])} r="5" fill="var(--color-primary)" stroke="#FFFFFF" strokeWidth="1.5" />
-        <rect x={boxX} y={boxY} width={boxW} height={boxH} rx="9" fill="var(--color-heading)" opacity="0.94" />
-        <text x={boxX + 11} y={boxY + 17} fontSize="11.5" fill="var(--color-border-light)" textAnchor="start" style={{ textTransform: "capitalize" }}>{fmtMonthYear(months[activeIndex])}</text>
-        <text x={boxX + 11} y={boxY + 36} fontSize="16" fontWeight="700" fill="#FFFFFF" textAnchor="start">{fmtEUR(market[activeIndex])}</text>
-        <text x={boxX + 11} y={boxY + 52} fontSize="12.5" fill="var(--color-border-light)" textAnchor="start">Costo: {fmtEUR(cost[activeIndex])}</text>
+        <line x1={tx} y1={padding.top} x2={tx} y2={height - padding.bottom} stroke="var(--color-heading)" strokeWidth="1" strokeDasharray="3 3" opacity="0.24" />
+        <circle cx={tx} cy={yFor(costValue)} r="5" fill="#FFFFFF" stroke="var(--color-border-light)" strokeWidth="2" />
+        <circle cx={tx} cy={yFor(marketValue)} r="5" fill="#FFFFFF" stroke="var(--color-primary)" strokeWidth="2" />
+        <rect x={boxX} y={boxY} width={boxW} height={boxH} rx="11" fill="#FFFFFF" stroke="var(--color-border)" strokeWidth="1" />
+        <text x={boxX + 12} y={boxY + 17} fontSize="11" fontWeight="700" fill="var(--color-heading)" textAnchor="start">{fmtMonthYear(months[activeIndex])}</text>
+        <circle cx={boxX + 14} cy={boxY + 33} r="3" fill="var(--color-primary)" />
+        <text x={boxX + 23} y={boxY + 37} fontSize="10.5" fill="var(--color-primary)">Valore di mercato</text>
+        <text x={boxX + boxW - 10} y={boxY + 37} fontSize="10.5" fontWeight="700" fill="var(--color-heading)" textAnchor="end">{fmtEUR(marketValue)}</text>
+        <circle cx={boxX + 14} cy={boxY + 50} r="3" fill="var(--color-border-light)" />
+        <text x={boxX + 23} y={boxY + 54} fontSize="10.5" fill="var(--color-primary)">Costo storico</text>
+        <text x={boxX + boxW - 10} y={boxY + 54} fontSize="10.5" fontWeight="700" fill="var(--color-heading)" textAnchor="end">{fmtEUR(costValue)}</text>
+        <line x1={boxX + 12} x2={boxX + boxW - 12} y1={boxY + 63} y2={boxY + 63} stroke="var(--color-border)" />
+        <text x={boxX + 12} y={boxY + 79} fontSize="10.5" fill="var(--color-primary)">Differenza</text>
+        <text x={boxX + boxW - 10} y={boxY + 79} fontSize="10.5" fontWeight="700" fill={difference >= 0 ? "var(--color-success)" : "var(--color-danger)"} textAnchor="end">{difference > 0 ? "+" : ""}{fmtEUR(difference)}{performance !== null ? ` · ${performance > 0 ? "+" : ""}${performance.toFixed(1)}%` : ""}</text>
       </g>
     );
   }
 
   return (
     <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", overflow: "hidden", boxSizing: "border-box" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, flexWrap: "wrap", margin: "2px 0 8px", fontSize: 11.5, fontWeight: 600 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--color-heading)" }}>
+          <span style={{ width: 22, height: 3, borderRadius: 3, background: "var(--color-primary)", display: "inline-block" }} />
+          Valore di mercato
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--color-primary)" }}>
+          <span style={{ width: 22, borderTop: "2px dashed var(--color-border-light)", display: "inline-block" }} />
+          Costo storico
+        </div>
+      </div>
       <svg
         ref={svgRef}
         viewBox={`0 0 ${width} ${height}`}
-        style={{ display: "block", width: "100%", maxWidth: "100%", height: "auto", filter: hideAmounts ? "blur(6px)" : "none", transition: "filter 0.15s", touchAction: "none", cursor: "crosshair" }}
+        style={{ display: "block", width: "100%", maxWidth: "100%", height: "auto", filter: hideAmounts ? "blur(6px)" : "none", transition: "filter 0.15s", touchAction: "none", cursor: "crosshair", overflow: "visible" }}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        {hasFuture && (
-          <rect x={splitX} y={padding.top} width={Math.max(0, width - padding.right - splitX)} height={innerH} fill="var(--color-heading)" opacity="0.035" />
-        )}
+        <defs>
+          <linearGradient id="capitalMarketArea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0.015" />
+          </linearGradient>
+        </defs>
+
+        {gridValues.map((v, i) => {
+          const gy = yFor(v);
+          return (
+            <g key={`grid-${i}`}>
+              <line x1={padding.left} x2={width - padding.right} y1={gy} y2={gy} stroke="var(--color-border)" strokeWidth="1" strokeDasharray="3 4" opacity="0.72" />
+              <text x={padding.left - 7} y={gy + 4} fontSize="10" fill="var(--color-border-light)" textAnchor="end">{fmtAxis(v)}</text>
+            </g>
+          );
+        })}
+
+        {hasFuture && <rect x={estimatedStartX} y={padding.top} width={Math.max(0, width - padding.right - estimatedStartX)} height={innerH} fill="var(--color-heading)" opacity="0.026" />}
+
+        <path d={areaForRange(market, 0, actualEndIdx)} fill="url(#capitalMarketArea)" stroke="none" />
+
         {hasFuture ? (
           <>
-            <path d={pathForRange(cost, 0, futureIdx)} fill="none" stroke="var(--color-border-light)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={pathForRange(cost, futureIdx, months.length - 1)} fill="none" stroke="var(--color-border-light)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 3" opacity="0.6" />
-            <path d={pathForRange(market, 0, futureIdx)} fill="none" stroke="var(--color-primary)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={pathForRange(market, futureIdx, months.length - 1)} fill="none" stroke="var(--color-primary)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 3" opacity="0.6" />
+            <path d={pathForRange(cost, 0, futureIdx)} fill="none" stroke="var(--color-border-light)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 5" />
+            <path d={pathForRange(cost, futureIdx, months.length - 1)} fill="none" stroke="var(--color-border-light)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 5" opacity="0.5" />
+            <path d={pathForRange(market, 0, actualEndIdx)} fill="none" stroke="var(--color-primary)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={pathForRange(market, actualEndIdx, months.length - 1)} fill="none" stroke="var(--color-border-light)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="4 5" opacity="0.72" />
           </>
         ) : (
           <>
-            <path d={pathForRange(cost, 0, months.length - 1)} fill="none" stroke="var(--color-border-light)" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-            <path d={pathForRange(market, 0, months.length - 1)} fill="none" stroke="var(--color-primary)" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+            <path d={pathForRange(cost, 0, months.length - 1)} fill="none" stroke="var(--color-border-light)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 5" />
+            <path d={pathForRange(market, 0, months.length - 1)} fill="none" stroke="var(--color-primary)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
           </>
         )}
+
         {months.map((m, i) => {
+          if (!showAllPoints && i !== highlightIdx) return null;
           const isFuture = hasFuture && i >= futureIdx;
-          return <circle key={`c${m}`} cx={xFor(i)} cy={yFor(cost[i])} r={2.5} fill={isFuture ? "#FFFFFF" : "var(--color-border-light)"} stroke={isFuture ? "var(--color-border-light)" : "none"} strokeWidth={isFuture ? 1.3 : 0} opacity={isFuture ? 0.75 : 1} />;
+          return <circle key={`c${m}`} cx={xFor(i)} cy={yFor(cost[i])} r={isFuture ? 2.5 : 3} fill="#FFFFFF" stroke="var(--color-border-light)" strokeWidth="1.5" opacity={isFuture ? 0.6 : 1} />;
         })}
         {months.map((m, i) => {
+          if (!showAllPoints && i !== highlightIdx) return null;
           const isFuture = hasFuture && i >= futureIdx;
-          return <circle key={`m${m}`} cx={xFor(i)} cy={yFor(market[i])} r={3} fill={isFuture ? "#FFFFFF" : "var(--color-primary)"} stroke={isFuture ? "var(--color-primary)" : "none"} strokeWidth={isFuture ? 1.5 : 0} opacity={isFuture ? 0.8 : 1} />;
+          return <circle key={`m${m}`} cx={xFor(i)} cy={yFor(market[i])} r={isFuture ? 2.5 : 3} fill="#FFFFFF" stroke={isFuture ? "var(--color-border-light)" : "var(--color-primary)"} strokeWidth="1.5" opacity={isFuture ? 0.6 : 1} />;
         })}
+
+        {highlightIdx >= 0 && (
+          <>
+            <line x1={xFor(highlightIdx)} y1={padding.top} x2={xFor(highlightIdx)} y2={height - padding.bottom} stroke="var(--color-primary)" strokeWidth="1" strokeDasharray="2 4" opacity="0.22" />
+            <circle cx={xFor(highlightIdx)} cy={yFor(market[highlightIdx])} r="11" fill="var(--color-primary)" opacity="0.12" />
+            <circle cx={xFor(highlightIdx)} cy={yFor(market[highlightIdx])} r="6" fill="#FFFFFF" stroke="var(--color-primary)" strokeWidth="2.5" />
+            <circle cx={xFor(highlightIdx)} cy={yFor(market[highlightIdx])} r="2.5" fill="var(--color-primary)" />
+          </>
+        )}
+
         {hasFuture && (
           <>
-            <line x1={splitX} y1={padding.top} x2={splitX} y2={height - padding.bottom} stroke="var(--color-primary)" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
-            <text x={splitX} y={padding.top - 3} fontSize="8" fill="var(--color-primary)" textAnchor="middle">Oggi</text>
+            <line x1={splitX} y1={padding.top} x2={splitX} y2={height - padding.bottom} stroke="var(--color-border-light)" strokeWidth="1" strokeDasharray="3 4" opacity="0.75" />
+            <rect x={Math.min(splitX + 5, width - 78)} y={padding.top + 5} width="68" height="18" rx="9" fill="#FFFFFF" stroke="var(--color-border)" />
+            <text x={Math.min(splitX + 39, width - 44)} y={padding.top + 17.5} fontSize="8.5" fontWeight="700" fill="var(--color-border-light)" textAnchor="middle">DATI STIMATI</text>
           </>
         )}
+
         {months.map((m, i) => {
-          if (i % labelEvery !== 0) return null;
+          if (i % labelEvery !== 0 && i !== months.length - 1) return null;
           const anchor = i === 0 ? "start" : (i === months.length - 1 ? "end" : "middle");
           const isFuture = hasFuture && i >= futureIdx;
-          return <text key={m} x={xFor(i)} y={height - 8} fontSize="11" fill={isFuture ? "var(--color-border-light)" : "var(--color-primary)"} textAnchor={anchor}>{fmtMonthYear(m)}</text>;
+          return <text key={m} x={xFor(i)} y={height - 8} fontSize="10.5" fontWeight={i === highlightIdx ? "700" : "500"} fill={isFuture ? "var(--color-border-light)" : "var(--color-primary)"} textAnchor={anchor}>{fmtMonthYear(m)}</text>;
         })}
         {tooltip}
       </svg>
     </div>
   );
 }
+// Grafico a barre per l'andamento del risparmio mensile in un anno: barre verdi (risparmio positivo) o
+// rosse (negativo) sopra/sotto una linea a zero, con etichetta del mese sotto ogni barra.
+function SavingBarChart({ months, values }) {
+  const width = 320, height = 180;
+  const padding = { top: 22, right: 6, bottom: 32, left: 6 };
+  const innerW = width - padding.left - padding.right;
+  const innerH = height - padding.top - padding.bottom;
 
-const PIE_COLORS = ["var(--color-primary)", "#5FBF7A", "#F2A65A", "#B98CD1", "#4FC1C7", "#E0708A", "#8C9EFF", "#F4C542"];
-
-function PortfolioPieChart({ portfolios, getPct }) {
-  const size = 140, stroke = 26;
-  const r = (size - stroke) / 2;
-  const cx = size / 2, cy = size / 2;
-  const circumference = 2 * Math.PI * r;
-  let cumulative = 0;
-
-  if (portfolios.length === 0 || portfolios.every((p) => getPct(p) === 0)) {
+  const validValues = values.filter((v) => v !== null);
+  if (validValues.length === 0) {
     return (
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--color-bg-tint)" strokeWidth={stroke} />
-      </svg>
+      <div style={{ textAlign: "center", padding: "40px 10px", color: "var(--color-primary)", fontSize: 13.5 }}>
+        Nessun dato disponibile per disegnare il grafico.
+      </div>
     );
   }
 
+  const fmtCompact = (v) => {
+    const abs = Math.abs(v);
+    const sign = v < 0 ? "-" : "";
+    if (abs >= 10000) return `${sign}${Math.round(abs / 1000)}k`;
+    if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)}k`;
+    return `${sign}${Math.round(abs)}`;
+  };
+
+  const maxV = Math.max(0, ...validValues);
+  const minV = Math.min(0, ...validValues);
+  const rawRange = maxV - minV || Math.abs(maxV) || 1;
+  const pad = rawRange * 0.18;
+  const topV = maxV + pad;
+  const botV = minV - pad;
+  const range = topV - botV || 1;
+  const yFor = (v) => padding.top + innerH - ((v - botV) / range) * innerH;
+  const zeroY = yFor(0);
+
+  const n = months.length;
+  const slot = innerW / n;
+  const barW = Math.min(26, slot * 0.5);
+
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <g transform={`rotate(-90 ${cx} ${cy})`}>
-        {portfolios.map((p, i) => {
-          const pct = getPct(p);
-          if (pct <= 0) return null;
-          const dash = (pct / 100) * circumference;
-          const gap = circumference - dash;
-          const offset = -(cumulative / 100) * circumference;
-          cumulative += pct;
-          return (
-            <circle key={p.id} cx={cx} cy={cy} r={r} fill="none" stroke={PIE_COLORS[i % PIE_COLORS.length]} strokeWidth={stroke} strokeDasharray={`${dash} ${gap}`} strokeDashoffset={offset} />
-          );
-        })}
-      </g>
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: "auto", display: "block" }}>
+      <line x1={padding.left} x2={width - padding.right} y1={zeroY} y2={zeroY} stroke="var(--color-border)" strokeWidth="1" />
+      {months.map((m, i) => {
+        const v = values[i];
+        const x = padding.left + i * slot + (slot - barW) / 2;
+        const monthLabelY = height - 6;
+        if (v === null) {
+          return <text key={i} x={x + barW / 2} y={monthLabelY} textAnchor="middle" fontSize="9" fill="var(--color-border-light)">{m}</text>;
+        }
+        const barTop = v >= 0 ? yFor(v) : zeroY;
+        const barH = Math.max(Math.abs(yFor(v) - zeroY), 2);
+        const color = v >= 0 ? "var(--color-success)" : "var(--color-danger)";
+        const valueLabelY = v >= 0 ? barTop - 5 : barTop + barH + 11;
+        return (
+          <g key={i}>
+            <rect x={x} y={barTop} width={barW} height={barH} rx={2.5} fill={color} />
+            <text x={x + barW / 2} y={valueLabelY} textAnchor="middle" fontSize="8.5" fontWeight="700" fill={color}>{fmtCompact(v)}</text>
+            <text x={x + barW / 2} y={monthLabelY} textAnchor="middle" fontSize="9" fontWeight="600" fill="var(--color-border-light)">{m}</text>
+          </g>
+        );
+      })}
     </svg>
   );
 }
 
+const PIE_COLORS = ["var(--color-primary)", "#5FBF7A", "#F2A65A", "#B98CD1", "#4FC1C7", "#E0708A", "#8C9EFF", "#F4C542"];
+
+
+
+function PerformanceChart({ months, primary, secondary, primaryLabel="Rendimento", secondaryLabel="Patrimonio complessivo" }) {
+  const [active,setActive]=useState(null), ref=useRef(null); const w=460,h=210,p={t:18,r:14,b:28,l:42};
+  if(months.length<2)return <div style={{padding:30,textAlign:"center",color:"var(--color-primary)"}}>Servono almeno due mesi di dati.</div>;
+  const vals=[...primary,...(secondary||[])].filter(Number.isFinite), lo=Math.min(0,...vals), hi=Math.max(0,...vals), span=hi-lo||1, min=lo-span*.1,max=hi+span*.1;
+  const x=i=>p.l+i*(w-p.l-p.r)/(months.length-1), y=v=>p.t+(h-p.t-p.b)*(1-(v-min)/(max-min));
+  const path=a=>{const pts=a.map((v,i)=>({x:x(i),y:y(v)}));if(pts.length===2)return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;let d=`M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} `;for(let i=0;i<pts.length-1;i++){const p0=pts[i===0?0:i-1],p1=pts[i],p2=pts[i+1],p3=pts[i+2<pts.length?i+2:i+1];const cp1x=p1.x+(p2.x-p0.x)/6,cp1y=p1.y+(p2.y-p0.y)/6,cp2x=p2.x-(p3.x-p1.x)/6,cp2y=p2.y-(p3.y-p1.y)/6;d+=`C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} `;}return d.trim();};
+  const pick=e=>{const r=ref.current.getBoundingClientRect();setActive(Math.max(0,Math.min(months.length-1,Math.round((((e.clientX-r.left)/r.width*w)-p.l)/((w-p.l-p.r)/(months.length-1))))))};
+  return <div><div style={{display:"flex",justifyContent:"center",gap:16,fontSize:11,fontWeight:600,marginBottom:5,flexWrap:"wrap"}}><span>━ {primaryLabel}</span>{secondary&&<span style={{color:"#9B6CB5"}}>━ {secondaryLabel}</span>}</div><svg ref={ref} viewBox={`0 0 ${w} ${h}`} style={{width:"100%",touchAction:"none"}} onPointerDown={e=>{e.currentTarget.setPointerCapture?.(e.pointerId);pick(e)}} onPointerMove={e=>active!==null&&pick(e)} onPointerUp={()=>setActive(null)} onPointerLeave={()=>setActive(null)}>{[0,.5,1].map(q=>{const v=min+(max-min)*q;return <g key={q}><line x1={p.l} x2={w-p.r} y1={y(v)} y2={y(v)} stroke="var(--color-border)" strokeDasharray="3 4"/><text x={p.l-6} y={y(v)+4} textAnchor="end" fontSize="10" fill="var(--color-border-light)">{v.toFixed(0)}%</text></g>})}<line x1={p.l} x2={w-p.r} y1={y(0)} y2={y(0)} stroke="var(--color-heading)" opacity=".25"/><path d={`${path(primary)} L ${x(primary.length-1)} ${y(0)} L ${x(0)} ${y(0)} Z`} fill="var(--color-primary)" opacity=".07"/><path d={path(primary)} fill="none" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>{secondary&&<path d={path(secondary)} fill="none" stroke="#B98CD1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>}{months.map((m,i)=>(i%Math.max(1,Math.ceil(months.length/6))===0||i===months.length-1)?<text key={m} x={x(i)} y={h-7} textAnchor={i===0?'start':i===months.length-1?'end':'middle'} fontSize="10" fill="var(--color-primary)">{fmtMonthYear(m)}</text>:null)}{active!==null&&<g pointerEvents="none"><line x1={x(active)} x2={x(active)} y1={p.t} y2={h-p.b} stroke="var(--color-heading)" strokeDasharray="3 3"/><rect x={Math.max(3,Math.min(w-184,x(active)-88))} y="3" width="181" height={secondary?61:45} rx="10" fill="#fff" stroke="var(--color-border)"/><text x={Math.max(13,Math.min(w-174,x(active)-78))} y="18" fontSize="10" fontWeight="700">{fmtMonthYear(months[active])}</text><text x={Math.max(13,Math.min(w-174,x(active)-78))} y="35" fontSize="10" fill="var(--color-primary)">{primaryLabel}: {fmtPct(primary[active])}</text>{secondary&&<text x={Math.max(13,Math.min(w-174,x(active)-78))} y="51" fontSize="10" fill="#9B6CB5">{secondaryLabel}: {fmtPct(secondary[active])}</text>}</g>}</svg></div>;
+}
+function PortfolioPieChart({ rows, activeId, setActiveId }) { const size=170,stroke=28,r=(size-stroke)/2,c=size/2,circ=2*Math.PI*r;let acc=0;const selected=rows.find(x=>x.id===activeId),total=rows.reduce((a,b)=>a+b.value,0);return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}><circle cx={c} cy={c} r={r} fill="none" stroke="var(--color-bg-tint)" strokeWidth={stroke}/><g transform={`rotate(-90 ${c} ${c})`}>{rows.map((row,i)=>{const dash=row.pct/100*circ,off=-acc/100*circ;acc+=row.pct;return <circle key={row.id} cx={c} cy={c} r={r} fill="none" stroke={PIE_COLORS[i%PIE_COLORS.length]} strokeWidth={activeId===row.id?stroke+6:stroke} strokeDasharray={`${dash} ${circ-dash}`} strokeDashoffset={off} opacity={!activeId||activeId===row.id?1:.25} onClick={()=>setActiveId(activeId===row.id?null:row.id)} style={{cursor:"pointer",transition:"all .18s"}}/>})}</g><text x={c} y={c-8} textAnchor="middle" fontSize="10" fill="var(--color-border-light)">{selected?selected.name:"Totale"}</text><text x={c} y={c+10} textAnchor="middle" fontSize="13" fontWeight="700" fill="var(--color-heading)">{fmtEUR(selected?selected.value:total)}</text>{selected&&<text x={c} y={c+26} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--color-primary)">{selected.pct.toFixed(1)}%</text>}</svg>;}
 function sumLatestValuationAsOf(items, valuations, itemIdField, cutoffFullDate) {
   const map = {};
   valuations.forEach((v) => {
@@ -2035,9 +2292,10 @@ function NetWorthApp({ session, onBack }) {
   const [cfSettings, setCfSettings] = useState([]);
   const [cfEntries, setCfEntries] = useState([]);
 
-  const [cursor, setCursor] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
-  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+  const [cursor] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
+  const [dashboardPeriod, setDashboardPeriod] = useState("ytd");
+  const [dashboardPeriodMenuOpen, setDashboardPeriodMenuOpen] = useState(false);
+  const [expandedCards, setExpandedCards] = useState({});
 
   useEffect(() => {
     (async () => {
@@ -2068,12 +2326,6 @@ function NetWorthApp({ session, onBack }) {
   const cursorFullDate = useMemo(() => monthDateToFull(monthKeyFromIdx(cursor.year * 12 + cursor.month)), [cursor]);
   const cursorMonthKey = monthKeyFromIdx(cursor.year * 12 + cursor.month);
 
-  const goCursor = (delta) => {
-    setCursor((c) => {
-      const idx = c.year * 12 + c.month + delta;
-      return { year: Math.floor(idx / 12), month: ((idx % 12) + 12) % 12 };
-    });
-  };
 
   const investTotal = useMemo(() => sumLatestValuationAsOf(investHoldings, investValuations, "holding_id", cursorFullDate), [investHoldings, investValuations, cursorFullDate]);
   const insuranceTotal = useMemo(() => sumLatestValuationAsOf(insurancePolicies, insuranceValuations, "policy_id", cursorFullDate), [insurancePolicies, insuranceValuations, cursorFullDate]);
@@ -2104,15 +2356,7 @@ function NetWorthApp({ session, onBack }) {
 
   const grandTotal = investTotal + insuranceTotal + realEstateTotal + cashflowTotal;
 
-  const rows = [
-    { key: "invest", label: "Investimenti", icon: TrendingUp, value: investTotal },
-    { key: "realestate", label: "Immobili", icon: Home, value: realEstateTotal },
-    { key: "insurance", label: "Assicurazioni e Previdenza", icon: Shield, value: insuranceTotal },
-    { key: "cashflow", label: "Conto corrente", icon: ArrowLeftRight, value: cashflowTotal },
-  ];
-
   const [dashboardView, setDashboardView] = useState("list");
-
   const buildNetWorthMapAsOf = (cutoffFullDate) => {
     const mk = fullDateToMonth(cutoffFullDate);
     const invest = sumLatestValuationWithCostAsOf(investHoldings, investValuations, "holding_id", cutoffFullDate);
@@ -2126,6 +2370,84 @@ function NetWorthApp({ session, onBack }) {
     return { invest, insurance, realestate, cashflow: { marketValue: cashflow, costBasis: cashflow } };
   };
 
+  const dashboardEndIdx = cursor.year * 12 + cursor.month;
+  const dashboardStartIdx = dashboardPeriod === "month" ? dashboardEndIdx - 1 : dashboardPeriod === "ytd" ? cursor.year * 12 - 1 : dashboardEndIdx - 12;
+  const dashboardStartFullDate = monthDateToFull(monthKeyFromIdx(dashboardStartIdx));
+  const dashboardPeriodLabel = dashboardPeriod === "month"
+    ? `${MESI[cursor.month]} ${cursor.year}`
+    : dashboardPeriod === "ytd"
+      ? `Gen–${MESI[cursor.month].slice(0, 3)} ${String(cursor.year).slice(-2)}`
+      : `${fmtMonthYear(monthKeyFromIdx(dashboardStartIdx + 1))}–${fmtMonthYear(monthKeyFromIdx(dashboardEndIdx))}`;
+  const dashboardStartMap = useMemo(() => buildNetWorthMapAsOf(dashboardStartFullDate), [dashboardStartFullDate, investHoldings, investValuations, insurancePolicies, insuranceValuations, reProperties, reValuations, cfAccounts, cfSettingsByAccount, cfEntriesByAccount]);
+  const dashboardEndMap = useMemo(() => buildNetWorthMapAsOf(cursorFullDate), [cursorFullDate, investHoldings, investValuations, insurancePolicies, insuranceValuations, reProperties, reValuations, cfAccounts, cfSettingsByAccount, cfEntriesByAccount]);
+  const dashboardSeriesMonths = useMemo(() => {
+    const months = [];
+    for (let idx = dashboardStartIdx; idx <= dashboardEndIdx; idx++) months.push(monthKeyFromIdx(idx));
+    return months;
+  }, [dashboardStartIdx, dashboardEndIdx]);
+  const totalsForKeys = (map, keys) => keys.reduce((acc, key) => {
+    const t = map[key] || { marketValue: 0, costBasis: 0 };
+    acc.marketValue += t.marketValue;
+    acc.costBasis += t.costBasis;
+    return acc;
+  }, { marketValue: 0, costBasis: 0 });
+  const dashboardCardData = (keys) => {
+    const end = totalsForKeys(dashboardEndMap, keys);
+    const start = totalsForKeys(dashboardStartMap, keys);
+    const gain = end.marketValue - end.costBasis;
+    const gainPct = end.costBasis > 0 ? (gain / end.costBasis) * 100 : null;
+    const investedDelta = end.costBasis - start.costBasis;
+    const sparklineValues = dashboardSeriesMonths.map((mk) => {
+      const t = totalsForKeys(buildNetWorthMapAsOf(monthDateToFull(mk)), keys);
+      return t.costBasis > 0 ? ((t.marketValue - t.costBasis) / t.costBasis) * 100 : null;
+    }).filter((v) => v !== null && Number.isFinite(v));
+    const startReturn = start.costBasis > 0 ? ((start.marketValue - start.costBasis) / start.costBasis) * 100 : null;
+    const periodReturnDelta = gainPct !== null && startReturn !== null ? gainPct - startReturn : null;
+    return { ...end, gain, gainPct, investedDelta, sparklineValues, periodReturnDelta };
+  };
+  const investDashboard = dashboardCardData(["invest"]);
+  const insuranceDashboard = dashboardCardData(["insurance"]);
+  const financialDashboard = dashboardCardData(["invest", "insurance"]);
+  const startGrandTotal = Object.values(dashboardStartMap).reduce((sum, t) => sum + (t.marketValue || 0), 0);
+  const netWorthPeriodDelta = grandTotal - startGrandTotal;
+  const netWorthPeriodDeltaPct = startGrandTotal !== 0 ? (netWorthPeriodDelta / Math.abs(startGrandTotal)) * 100 : null;
+  const realEstateWeight = grandTotal !== 0 ? (realEstateTotal / grandTotal) * 100 : 0;
+  const liquidityWeight = grandTotal !== 0 ? (cashflowTotal / grandTotal) * 100 : 0;
+  const coverageExpenseSeries = useMemo(() => {
+    const byMonth = {};
+    cfEntries.forEach((entry) => {
+      const mk = fullDateToMonth(entry.value_date);
+      if (mk > cursorMonthKey) return;
+      byMonth[mk] = (byMonth[mk] || 0) + Number(entry.expenses || 0);
+    });
+    return Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b)).slice(-12).map(([month, expenses]) => ({ month, expenses }));
+  }, [cfEntries, cursorMonthKey]);
+  const coverageSampleMonths = coverageExpenseSeries.length;
+  const coverageAverageExpense = coverageSampleMonths > 0 ? coverageExpenseSeries.reduce((sum, row) => sum + row.expenses, 0) / coverageSampleMonths : null;
+  const coverageMonths = coverageAverageExpense > 0 ? cashflowTotal / coverageAverageExpense : null;
+  const coverageStatus = coverageMonths === null ? null : coverageMonths < 3 ? { label: "Attenzione", color: "var(--color-danger)" } : coverageMonths < 6 ? { label: "Da monitorare", color: "var(--color-warning)" } : coverageMonths < 12 ? { label: "Buona", color: "var(--color-success)" } : { label: "Ottima", color: "var(--color-heading)" };
+  const coverageIncomeSeries = useMemo(() => {
+    const byMonth = {};
+    cfEntries.forEach((entry) => {
+      const mk = fullDateToMonth(entry.value_date);
+      if (mk > cursorMonthKey) return;
+      byMonth[mk] = (byMonth[mk] || 0) + Number(entry.income || 0);
+    });
+    return Object.entries(byMonth).sort(([a], [b]) => a.localeCompare(b)).slice(-12).map(([month, income]) => ({ month, income }));
+  }, [cfEntries, cursorMonthKey]);
+  const coverageAverageIncome = coverageIncomeSeries.length > 0 ? coverageIncomeSeries.reduce((sum, row) => sum + row.income, 0) / coverageIncomeSeries.length : null;
+  const expenseStability = useMemo(() => {
+    if (coverageSampleMonths < 3 || coverageAverageExpense === null || coverageAverageExpense <= 0) return { label: "Dati insufficienti", color: "var(--color-border-light)" };
+    const variance = coverageExpenseSeries.reduce((sum, row) => sum + Math.pow(row.expenses - coverageAverageExpense, 2), 0) / coverageSampleMonths;
+    const coefficient = Math.sqrt(variance) / coverageAverageExpense;
+    if (coefficient < 0.15) return { label: "Regolare", color: "var(--color-success)" };
+    if (coefficient < 0.30) return { label: "Moderatamente variabile", color: "var(--color-primary)" };
+    if (coefficient < 0.50) return { label: "Variabile", color: "var(--color-warning)" };
+    return { label: "Molto variabile", color: "var(--color-danger)" };
+  }, [coverageExpenseSeries, coverageSampleMonths, coverageAverageExpense]);
+  const maxExpensePeriod = coverageSampleMonths > 0 ? coverageExpenseSeries.reduce((max, row) => row.expenses > max.expenses ? row : max, coverageExpenseSeries[0]) : null;
+  const [liquidityExpanded, setLiquidityExpanded] = useState(false);
+  const fmtPp = (v) => `${v > 0 ? "+" : ""}${v.toFixed(2)} p.p.`;
   const netWorthItems = [
     { id: "invest", name: "Investimenti", icon: TrendingUp },
     { id: "realestate", name: "Immobili", icon: Home },
@@ -2155,6 +2477,101 @@ function NetWorthApp({ session, onBack }) {
     return months;
   }, [investValuations, insuranceValuations, reValuations, cfEntries, cfSettings, cursor]);
 
+  const DashboardFinancialCard = ({ title, icon: Icon, amount, weightPct, data, hero = false, compact = false }) => {
+    const gainColor = data.gain > 0 ? "var(--color-success)" : data.gain < 0 ? "var(--color-danger)" : "var(--color-border-light)";
+    const periodColor = data.periodReturnDelta > 0 ? "var(--color-success)" : data.periodReturnDelta < 0 ? "var(--color-danger)" : "var(--color-border-light)";
+    if (compact) {
+      const isExpanded = !!expandedCards[title];
+      const toggle = () => setExpandedCards((prev) => ({ ...prev, [title]: !prev[title] }));
+      const cardStyle = {
+        gridColumn: isExpanded ? "1 / -1" : undefined,
+        minHeight: isExpanded ? undefined : 126,
+        padding: isExpanded ? 16 : 12,
+        borderRadius: "var(--radius-xl)",
+        background: "var(--color-bg-tint)",
+        color: "var(--color-heading)",
+        minWidth: 0,
+        cursor: "pointer",
+        overflow: "hidden",
+        transition: "padding 180ms ease, min-height 180ms ease",
+      };
+      if (!isExpanded) {
+        return (
+          <div onClick={toggle} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }} aria-expanded="false" className="dashboard-card-transition" style={cardStyle}>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 8, marginBottom: 9 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                <div style={{ width: 27, height: 27, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={14} color="var(--color-primary)" /></div>
+                <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, minWidth: 0 }}>
+                <div className="mono" style={{ fontSize: 16.5, fontWeight: 700, whiteSpace: "nowrap" }}><Money>{fmtEUR(amount)}</Money></div>
+                <ChevronDown size={13} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(0deg)", transition: "transform 180ms ease" }} />
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 92px", gap: 6, alignItems: "center" }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 9.5, color: "var(--color-border-light)", marginBottom: 2 }}>Rendimento</div>
+                <div className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: gainColor, whiteSpace: "nowrap", marginBottom: 4 }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money></div>
+                <div style={{ fontSize: 9.5, color: "var(--color-border-light)", marginBottom: 2 }}>Rendimento %</div>
+                <div className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: gainColor, whiteSpace: "nowrap" }}>{data.gainPct !== null ? fmtPct(data.gainPct) : "—"}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", minWidth: 0 }}>
+                <Sparkline values={data.sparklineValues} color={gainColor} width={92} height={58} />
+              </div>
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div onClick={toggle} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }} aria-expanded="true" className="dashboard-card-transition" style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+            <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color="var(--color-primary)" /></div>
+            <div style={{ fontSize: 14, fontWeight: 700, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+            <div className="mono" style={{ fontSize: 21, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0 }}><Money>{fmtEUR(amount)}</Money></div>
+            <ChevronDown size={15} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(180deg)", transition: "transform 180ms ease" }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, fontSize: 11 }}>
+            <span style={{ color: "var(--color-border-light)" }}>Rendimento complessivo</span>
+            <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: gainColor }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</span>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "end" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--color-border-light)", marginBottom: 3 }}>Peso sul patrimonio</div>
+              <div className="mono" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--color-primary)", marginBottom: 10 }}>{weightPct.toFixed(1)}%</div>
+              <div style={{ fontSize: 11, fontWeight: 500, color: "var(--color-border-light)", marginBottom: 3 }}>Contributo nel periodo</div>
+              <div className="mono" style={{ fontSize: 13.5, fontWeight: 700, color: "var(--color-primary)" }}><Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money></div>
+            </div>
+            <Sparkline values={data.sparklineValues} color={gainColor} width={148} height={64} endLabel={data.periodReturnDelta !== null ? fmtPp(data.periodReturnDelta) : null} endLabelColor={periodColor} />
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div style={{ padding: hero ? "16px" : "14px", borderRadius: "var(--radius-xl)", background: hero ? "linear-gradient(145deg, var(--color-heading), var(--color-primary))" : "var(--color-bg-tint)", color: hero ? "#FFFFFF" : "var(--color-heading)", boxShadow: hero ? "0 8px 20px rgba(5,91,101,0.14)" : "none" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: hero ? 10 : 8 }}>
+          <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: hero ? "rgba(255,255,255,0.14)" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color={hero ? "#FFFFFF" : "var(--color-primary)"} /></div>
+          <div style={{ fontSize: hero ? 13 : 13.5, fontWeight: 700, textTransform: hero ? "uppercase" : "none", letterSpacing: hero ? "0.055em" : "normal", opacity: hero ? 0.78 : 1, flex: 1, minWidth: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{title}</div>
+          <div className="mono" style={{ fontSize: hero ? 24 : 20, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0, marginLeft: 8 }}><Money>{fmtEUR(amount)}</Money></div>
+        </div>
+        {!hero && <div className="mono" style={{ fontSize: 11, color: "var(--color-primary)", marginBottom: 12 }}>{weightPct.toFixed(1)}% del patrimonio</div>}
+        {hero && (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, fontSize: 11 }}>
+            <span style={{ opacity: 0.78, fontWeight: 500 }}>Rendimento complessivo</span>
+            <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: data.gain >= 0 ? "#66F0B5" : "#FFD0C8" }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</span>
+          </div>
+        )}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "end" }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 11, fontWeight: 500, color: hero ? "rgba(255,255,255,0.72)" : "var(--color-border-light)", marginBottom: 3 }}>{hero ? "Variazione patrimonio" : "Rendimento complessivo"}</div>
+            <div className="mono" style={{ fontSize: 13.5, fontWeight: 700, color: hero ? (netWorthPeriodDelta >= 0 ? "#66F0B5" : "#FFD0C8") : gainColor, marginBottom: 10 }}>{hero ? <><Money>{netWorthPeriodDelta > 0 ? "+" : ""}{fmtEUR(netWorthPeriodDelta)}</Money>{netWorthPeriodDeltaPct !== null ? ` · ${fmtPct(netWorthPeriodDeltaPct)}` : ""}</> : <><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</>}</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: hero ? "rgba(255,255,255,0.72)" : "var(--color-border-light)", marginBottom: 3 }}>Contributo nel periodo</div>
+            <div className="mono" style={{ fontSize: 13.5, fontWeight: 700, color: hero ? "#FFFFFF" : "var(--color-primary)" }}><Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money></div>
+          </div>
+          <Sparkline values={data.sparklineValues} color={gainColor} width={148} height={64} endLabel={data.periodReturnDelta !== null ? fmtPp(data.periodReturnDelta) : null} endLabelColor={periodColor} style={{ filter: hero ? "brightness(1.35)" : "none" }} />
+        </div>
+      </div>
+    );
+  };
   if (!loaded) {
     return (
       <div style={{ height: "100dvh", width: "100%", background: "#FFFFFF", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
@@ -2179,54 +2596,12 @@ function NetWorthApp({ session, onBack }) {
             Statistiche
           </button>
           <button onClick={() => setDashboardView("list")} style={{ background: "none", border: "none", borderBottom: dashboardView === "list" ? "2px solid var(--color-primary)" : "2px solid transparent", padding: "0 2px 10px", marginBottom: -1, color: dashboardView === "list" ? "var(--color-heading)" : "var(--color-border-light)", fontSize: 14.5, fontWeight: 600, cursor: "pointer" }}>
-            Elenco
+            Dashboard
           </button>
           <button onClick={() => setDashboardView("balance")} style={{ background: "none", border: "none", borderBottom: dashboardView === "balance" ? "2px solid var(--color-primary)" : "2px solid transparent", padding: "0 2px 10px", marginBottom: -1, color: dashboardView === "balance" ? "var(--color-heading)" : "var(--color-border-light)", fontSize: 14.5, fontWeight: 600, cursor: "pointer" }}>
             Bilancio
           </button>
         </div>
-
-        {dashboardView === "list" && (
-          <>
-        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <button onClick={() => goCursor(-1)} aria-label="Mese precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-border-light)", flexShrink: 0 }}><ChevronLeft size={18} /></button>
-          <div onClick={() => { setPickerYear(cursor.year); setDatePickerOpen(true); }} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 13, letterSpacing: "0.01em", color: "var(--color-border-light)", fontWeight: 600, whiteSpace: "nowrap", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", cursor: "pointer", textTransform: "capitalize" }}>
-            <Calendar size={13} />
-            {MESI[cursor.month]} {String(cursor.year).slice(-2)}
-          </div>
-          <button onClick={() => goCursor(1)} aria-label="Mese successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-border-light)", flexShrink: 0 }}><ChevronRight size={18} /></button>
-
-          {datePickerOpen && (
-            <>
-              <div onClick={() => setDatePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
-              <div className="fade-in" style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, zIndex: 40 }}>
-                <div style={{ maxWidth: 260, margin: "0 auto", background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <button onClick={() => setPickerYear((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronLeft size={18} /></button>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-heading)" }}>{pickerYear}</div>
-                    <button onClick={() => setPickerYear((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronRight size={18} /></button>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-                    {MESI.map((m, i) => {
-                      const isSelected = pickerYear === cursor.year && i === cursor.month;
-                      return (
-                        <button key={m} onClick={() => { setCursor({ year: pickerYear, month: i }); setDatePickerOpen(false); }} className="text-xs" style={{ padding: "9px 0", borderRadius: "var(--radius-sm)", border: isSelected ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: isSelected ? "var(--color-primary)" : "#FFFFFF", color: isSelected ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
-                          {m.slice(0, 3)}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div key={`${cursor.year}-${cursor.month}`} className="fade-in" style={{ textAlign: "center", padding: "2px 0 8px", borderBottom: "1px solid var(--color-border)", flexShrink: 0 }}>
-          <div className="mono" style={{ fontSize: 32, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--color-heading)" }}><Money>{fmtEUR(grandTotal)}</Money></div>
-        </div>
-          </>
-        )}
 
         {dashboardView === "chart" ? (
           <StatsSection
@@ -2244,6 +2619,7 @@ function NetWorthApp({ session, onBack }) {
             hideContributionsStat={true}
             hidePerformanceBox={true}
             emptyMessage=""
+            performanceSeries={(months) => { const snapshots=months.map(mk=>buildNetWorthMapAsOf(monthDateToFull(mk))), financial=snapshots.map(map=>{const t=totalsForKeys(map,["invest","insurance"]);return t.costBasis>0?(t.marketValue-t.costBasis)/t.costBasis*100:0}), impact=snapshots.map(map=>{const f=totalsForKeys(map,["invest","insurance"]), totalCost=Object.values(map).reduce((sum,t)=>sum+(t.costBasis||0),0);return totalCost>0?(f.marketValue-f.costBasis)/totalCost*100:0}), f0=financial[0]||0,i0=impact[0]||0; return {primary:financial.map(v=>v-f0),secondary:impact.map(v=>v-i0),primaryLabel:"Rendimento attività finanziarie",secondaryLabel:"Impatto sul patrimonio"}; }}
           />
         ) : dashboardView === "balance" ? (
           <div className="scrollbar-thin" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "10px 2px" }}>
@@ -2286,300 +2662,123 @@ function NetWorthApp({ session, onBack }) {
             </div>
           </div>
         ) : (
-        <div className="scrollbar-thin" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "10px 0", display: "flex", flexDirection: "column", gap: 8 }}>
-          {rows.map((r) => {
-            const Icon = r.icon;
-            const weightPct = grandTotal !== 0 ? (r.value / grandTotal) * 100 : 0;
-            return (
-              <div key={r.key} className="card-item" style={{ gap: 14, flexShrink: 0 }}>
-                <div className="card-item-icon">
-                  <Icon size={24} color="var(--color-primary)" />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
-                    <span className="text-lg">{r.label}</span>
-                    <span className="mono text-lg" style={{ flexShrink: 0, marginLeft: 8 }}><Money>{fmtEUR(r.value)}</Money></span>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
-                    <span style={{ fontSize: 12, color: "var(--color-border-light)" }}>{weightPct.toFixed(0)}% del totale</span>
-                  </div>
-                  <div className="progress-track">
-                    <div className="bar-fill" style={{ height: "100%", width: `${Math.max(0, Math.min(100, weightPct))}%`, background: "var(--color-primary)", borderRadius: "var(--radius-xs)" }} />
-                  </div>
+          <div className="fade-in scrollbar-thin" style={{ flex: "1 1 auto", minHeight: 0, overflowY: "auto", padding: "10px 2px 4px" }}>
+            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button onClick={() => setDashboardPeriodMenuOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 11px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-bg-tint)", color: "var(--color-primary)", fontSize: 12.5, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  {dashboardPeriod === "month" ? "Mensile" : dashboardPeriod === "ytd" ? "Year to Date" : "1 Year"} <ChevronDown size={13} />
+                </button>
+                {dashboardPeriodMenuOpen && (
+                  <>
+                    <div onClick={() => setDashboardPeriodMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
+                    <div className="fade-in" style={{ position: "absolute", top: "100%", left: 0, marginTop: 6, zIndex: 40, minWidth: 140, background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 6 }}>
+                      {[{ id: "month", label: "Mensile" }, { id: "ytd", label: "Year to Date" }, { id: "year", label: "1 Year" }].map((p) => <button key={p.id} onClick={() => { setDashboardPeriod(p.id); setDashboardPeriodMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: dashboardPeriod === p.id ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>{p.label}</button>)}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", display: "flex", alignItems: "center", gap: 4, minWidth: 0, color: "var(--color-border-light)", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap", pointerEvents: "none" }}>
+                <Calendar size={13} /> {dashboardPeriodLabel}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <DashboardFinancialCard title="Patrimonio" icon={PieChart} amount={grandTotal} weightPct={100} data={financialDashboard} hero />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, alignItems: "stretch" }}>
+                <DashboardFinancialCard title="Investimenti" icon={TrendingUp} amount={investTotal} weightPct={grandTotal !== 0 ? (investTotal / grandTotal) * 100 : 0} data={investDashboard} compact />
+                <DashboardFinancialCard title="Assicurazioni e Previdenza" icon={Shield} amount={insuranceTotal} weightPct={grandTotal !== 0 ? (insuranceTotal / grandTotal) * 100 : 0} data={insuranceDashboard} compact />
+                <div style={{ padding: 12, borderRadius: "var(--radius-xl)", background: "var(--color-bg-tint)", minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}><div style={{ width: 27, height: 27, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center" }}><Home size={14} color="var(--color-primary)" /></div><span style={{ fontSize: 12, fontWeight: 700 }}>Immobili</span></div><div className="mono" style={{ fontSize: 16.5, fontWeight: 700 }}><Money>{fmtEUR(realEstateTotal)}</Money></div><div className="mono" style={{ fontSize: 10, color: "var(--color-primary)", marginTop: 5 }}>{realEstateWeight.toFixed(1)}% del patrimonio</div><div style={{ marginTop: 12, fontSize: 9.5, lineHeight: 1.4, color: "var(--color-border-light)" }}>Approfondimento dedicato previsto in una fase successiva.</div></div>
+                <div
+                  onClick={() => setLiquidityExpanded((v) => !v)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setLiquidityExpanded((v) => !v); } }}
+                  aria-expanded={liquidityExpanded}
+                  className="dashboard-card-transition"
+                  style={{
+                    gridColumn: liquidityExpanded ? "1 / -1" : undefined,
+                    minHeight: liquidityExpanded ? undefined : 126,
+                    padding: liquidityExpanded ? 16 : 12,
+                    borderRadius: "var(--radius-xl)",
+                    background: "var(--color-bg-tint)",
+                    minWidth: 0,
+                    cursor: "pointer",
+                    overflow: "hidden",
+                    transition: "padding 180ms ease, min-height 180ms ease",
+                  }}
+                >
+                  {!liquidityExpanded ? (
+                    <>
+                      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                          <div style={{ width: 27, height: 27, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Banknote size={14} color="var(--color-primary)" /></div>
+                          <div style={{ fontSize: 12, fontWeight: 700 }}>Liquidità</div>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <div className="mono" style={{ fontSize: 16.5, fontWeight: 700, whiteSpace: "nowrap" }}><Money>{fmtEUR(cashflowTotal)}</Money></div>
+                          <ChevronDown size={13} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(0deg)", transition: "transform 180ms ease" }} />
+                        </div>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 10, alignItems: "start" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 10.5, color: "var(--color-border-light)", marginBottom: 3 }}>Copertura spese</div>
+                          <div className="mono" style={{ fontSize: 14, fontWeight: 700, color: "var(--color-heading)", whiteSpace: "nowrap" }}>{coverageMonths !== null ? `${coverageMonths.toFixed(1)} mesi` : "—"}</div>
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 10.5, color: "var(--color-border-light)", marginBottom: 3 }}>Stabilità spese</div>
+                          <div style={{ fontSize: 11.5, fontWeight: 700, color: expenseStability.color, lineHeight: 1.25 }}>● {expenseStability.label}</div>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Banknote size={17} color="var(--color-primary)" /></div>
+                        <div style={{ fontSize: 14, fontWeight: 700, flex: 1 }}>Liquidità</div>
+                        <div className="mono" style={{ fontSize: 21, fontWeight: 700, whiteSpace: "nowrap" }}><Money>{fmtEUR(cashflowTotal)}</Money></div>
+                        <ChevronDown size={15} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(180deg)", transition: "transform 180ms ease" }} />
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 0.82fr) minmax(210px, 1.18fr)", gap: 20, alignItems: "stretch" }}>
+                        <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "10px 12px", borderRadius: "var(--radius-lg)", background: "#FFFFFF", border: "1px solid rgba(69,130,139,0.10)", minWidth: 0 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-border-light)", marginBottom: 5 }}>Copertura spese</div>
+                          <div className="mono" style={{ fontSize: 22, fontWeight: 700, color: "var(--color-heading)", lineHeight: 1.15 }}>{coverageMonths !== null ? `${coverageMonths.toFixed(1)} mesi` : "—"}</div>
+                          {coverageStatus && <div style={{ marginTop: 7, fontSize: 12, fontWeight: 700, color: coverageStatus.color }}>● {coverageStatus.label}</div>}
+                          <div style={{ marginTop: 10, fontSize: 9.5, lineHeight: 1.4, color: "var(--color-border-light)" }}>{coverageSampleMonths > 0 ? `Media calcolata sugli ultimi ${coverageSampleMonths} mesi disponibili` : "Dati non disponibili"}</div>
+                        </div>
+                        <div style={{ display: "grid", gap: 0, minWidth: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, padding: "5px 0 8px" }}><span style={{ fontSize: 10.5, color: "var(--color-border-light)" }}>Entrate medie mensili</span><span className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-success)", whiteSpace: "nowrap" }}><Money>{coverageAverageIncome !== null ? fmtEUR(coverageAverageIncome) : "—"}</Money></span></div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, padding: "8px 0", borderTop: "1px dotted var(--color-border)" }}><span style={{ fontSize: 10.5, color: "var(--color-border-light)" }}>Spesa media mensile</span><span className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}><Money>{coverageAverageExpense !== null ? fmtEUR(coverageAverageExpense) : "—"}</Money></span></div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, padding: "8px 0", borderTop: "1px dotted var(--color-border)" }}><span style={{ fontSize: 10.5, color: "var(--color-border-light)" }}>Stabilità spese</span><span style={{ fontSize: 11.5, fontWeight: 700, color: expenseStability.color, textAlign: "right" }}>● {expenseStability.label}</span></div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, padding: "8px 0", borderTop: "1px dotted var(--color-border)" }}><span style={{ fontSize: 10.5, color: "var(--color-border-light)" }}>Spesa massima</span><span className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-heading)", textAlign: "right", whiteSpace: "nowrap" }}>{maxExpensePeriod ? <><Money>{fmtEUR(maxExpensePeriod.expenses)}</Money> · {fmtMonthYear(maxExpensePeriod.month)}</> : "—"}</span></div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, padding: "8px 0 5px", borderTop: "1px dotted var(--color-border)" }}><span style={{ fontSize: 10.5, color: "var(--color-border-light)" }}>Peso sul patrimonio</span><span className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}>{liquidityWeight.toFixed(1)}%</span></div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function StatsSection({
-  items, getName, getIcon,
-  buildMapAsOf, getTotalsFromMap,
-  historyMonths, cursorFullDate,
-  chartTitle, compositionTitle,
-  biggestLabel, performantLabel, growthLabel,
-  hideContributionsStat, hidePerformanceBox,
-  emptyMessage,
-}) {
-  const futureFromMonth = currentMonthISO();
-  const [chartRange, setChartRange] = useState("1Y");
-  const [statsExpanded, setStatsExpanded] = useState(true);
-  const [compositionExpanded, setCompositionExpanded] = useState(true);
-  const [chartExpanded, setChartExpanded] = useState(true);
-  const RANGE_OPTIONS = ["3M", "6M", "YTD", "1Y", "2Y", "3Y", "5Y"];
-
-  const capitalSeries = useMemo(() => {
-    if (historyMonths.length === 0) return { months: [], market: [], cost: [] };
-    const market = [], cost = [];
-    historyMonths.forEach((mk) => {
-      const map = buildMapAsOf(monthDateToFull(mk));
-      let mv = 0, cb = 0;
-      items.forEach((it) => { const t = getTotalsFromMap(it, map); mv += t.marketValue; cb += t.costBasis; });
-      market.push(mv); cost.push(cb);
-    });
-    return { months: historyMonths, market, cost };
-  }, [historyMonths, items]);
-
-  const SHORT_RANGES = ["3M", "6M", "YTD"];
-  const chartSeries = useMemo(() => {
-    const { months, market, cost } = capitalSeries;
-    if (months.length === 0) return capitalSeries;
-    const toIdx = (mk) => { const [y, m] = mk.split("-").map(Number); return y * 12 + (m - 1); };
-    const today = currentMonthISO();
-    const isShort = SHORT_RANGES.includes(chartRange);
-    let endPos = months.length - 1;
-    if (isShort) {
-      const futurePos = months.findIndex((mk) => mk > today);
-      if (futurePos !== -1) endPos = Math.max(0, futurePos - 1);
-    }
-    const lastIdx = toIdx(months[endPos]);
-    const firstIdx = toIdx(months[0]);
-    let wantedStartIdx;
-    if (chartRange === "3M") wantedStartIdx = lastIdx - 2;
-    else if (chartRange === "6M") wantedStartIdx = lastIdx - 5;
-    else if (chartRange === "YTD") { const [y] = months[endPos].split("-").map(Number); wantedStartIdx = y * 12; }
-    else if (chartRange === "1Y") wantedStartIdx = lastIdx - 11;
-    else if (chartRange === "2Y") wantedStartIdx = lastIdx - 23;
-    else if (chartRange === "3Y") wantedStartIdx = lastIdx - 35;
-    else wantedStartIdx = lastIdx - 59;
-    const clampedStartIdx = Math.max(wantedStartIdx, firstIdx);
-    const startPos = months.findIndex((mk) => toIdx(mk) >= clampedStartIdx);
-    return { months: months.slice(startPos, endPos + 1), market: market.slice(startPos, endPos + 1), cost: cost.slice(startPos, endPos + 1) };
-  }, [capitalSeries, chartRange]);
-
-  const chartStats = useMemo(() => {
-    const { months, market, cost } = chartSeries;
-    if (months.length === 0) return null;
-    const first = market[0];
-    const last = market[market.length - 1];
-    let maxV = market[0], maxM = months[0], minV = market[0], minM = months[0];
-    market.forEach((v, i) => {
-      if (v > maxV) { maxV = v; maxM = months[i]; }
-      if (v < minV) { minV = v; minM = months[i]; }
-    });
-    const delta = last - first;
-    const deltaPct = first > 0 ? (delta / first) * 100 : null;
-    const contributions = cost[cost.length - 1] - cost[0];
-    return { delta, deltaPct, maxV, maxM, minV, minM, contributions };
-  }, [chartSeries]);
-
-  const mapAtCursor = useMemo(() => buildMapAsOf(cursorFullDate), [cursorFullDate]);
-  const itemTotalsAtCursor = (item) => getTotalsFromMap(item, mapAtCursor);
-  const grandTotalAtCursor = useMemo(() => {
-    let marketValue = 0;
-    items.forEach((it) => { marketValue += itemTotalsAtCursor(it).marketValue; });
-    return marketValue;
-  }, [items, mapAtCursor]);
-  const costAtCursor = useMemo(() => {
-    let costBasis = 0;
-    items.forEach((it) => { costBasis += itemTotalsAtCursor(it).costBasis; });
-    return costBasis;
-  }, [items, mapAtCursor]);
-  const gainAtCursor = grandTotalAtCursor - costAtCursor;
-  const gainPctAtCursor = costAtCursor > 0 ? (gainAtCursor / costAtCursor) * 100 : null;
-
-  const returnPctLocal = (t) => (t.costBasis > 0 ? (t.gain / t.costBasis) * 100 : null);
-  const fmtPctLocal = (p) => `${p > 0 ? "+" : ""}${p.toFixed(2)}%`;
-
-  return (
-    <div className="fade-in scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden", padding: "10px 4px", width: "100%", boxSizing: "border-box" }}>
-      <div onClick={() => setChartExpanded((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", marginBottom: chartExpanded ? 10 : 0 }}>
-        <div style={{ width: 24 }} />
-        <div className="section-label" style={{ textAlign: "center" }}>{chartTitle}</div>
-        <button aria-label={chartExpanded ? "Comprimi grafico" : "Espandi grafico"} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-primary)", display: "flex", transform: chartExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
-          <ChevronDown size={18} />
-        </button>
-      </div>
-      {chartExpanded && (
-        <>
-        <div className="fade-in" style={{ background: "var(--color-bg-tint)", borderRadius: "var(--radius-xl)", padding: "18px 16px" }}>
-          <div style={{ textAlign: "center", marginBottom: 10 }}>
-            <div className="mono" style={{ fontSize: 30, fontWeight: 600, letterSpacing: "-0.01em", color: "var(--color-heading)" }}><Money>{fmtEUR(grandTotalAtCursor)}</Money></div>
-            <div className="mono" style={{ fontSize: 13.5, fontWeight: 600, marginTop: 4, color: gainAtCursor > 0 ? "var(--color-success)" : gainAtCursor < 0 ? "var(--color-danger)" : "var(--color-primary)" }}>
-              <Money>{gainAtCursor > 0 ? "+" : ""}{fmtEUR(gainAtCursor)}</Money>{gainPctAtCursor !== null && ` (${fmtPctLocal(gainPctAtCursor)})`}
-            </div>
-          </div>
-          <CapitalChart months={chartSeries.months} market={chartSeries.market} cost={chartSeries.cost} futureFromMonth={SHORT_RANGES.includes(chartRange) ? null : futureFromMonth} />
-        </div>
-        <div className="no-scrollbar" style={{ display: "flex", justifyContent: "center", gap: 4, marginTop: 10, flexWrap: "nowrap", overflowX: "auto", paddingBottom: 2 }}>
-          {RANGE_OPTIONS.map((r) => (
-            <button key={r} onClick={() => setChartRange(r)} style={{ padding: "5px 9px", borderRadius: "var(--radius-pill)", border: chartRange === r ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: chartRange === r ? "var(--color-primary)" : "#FFFFFF", color: chartRange === r ? "#FFFFFF" : "var(--color-primary)", fontSize: 11.5, fontWeight: 600, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}>
-              {r}
-            </button>
-          ))}
-        </div>
-        </>
-      )}
-
-      {chartStats && (
-        <div style={{ marginTop: 20, borderTop: "1px solid var(--color-border)", paddingTop: 16 }}>
-          <div onClick={() => setStatsExpanded((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", marginBottom: statsExpanded ? 14 : 0 }}>
-            <div style={{ width: 24 }} />
-            <div className="section-label" style={{ textAlign: "center" }}>Statistiche</div>
-            <button aria-label={statsExpanded ? "Comprimi statistiche" : "Espandi statistiche"} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-primary)", display: "flex", transform: statsExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
-              <ChevronDown size={18} />
-            </button>
-          </div>
-          {statsExpanded && (
-            <div className="fade-in">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 4px" }}>
-                <span style={{ fontSize: 13, color: "var(--color-primary)" }}>Variazione nel periodo</span>
-                <span className="mono text-md" style={{ color: chartStats.delta > 0 ? "var(--color-success)" : chartStats.delta < 0 ? "var(--color-danger)" : "var(--color-primary)" }}>
-                  <Money>{chartStats.delta > 0 ? "+" : ""}{fmtEUR(chartStats.delta)}</Money>{chartStats.deltaPct !== null && ` (${fmtPctLocal(chartStats.deltaPct)})`}
-                </span>
-              </div>
-              {!hideContributionsStat && (
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 4px", borderTop: "1px dotted var(--color-border)" }}>
-                  <span style={{ fontSize: 13, color: "var(--color-primary)" }}>Contributi periodo</span>
-                  <span className="mono text-md" style={{ color: chartStats.contributions > 0 ? "var(--color-success)" : chartStats.contributions < 0 ? "var(--color-danger)" : "var(--color-primary)" }}>
-                    <Money>{chartStats.contributions > 0 ? "+" : ""}{fmtEUR(chartStats.contributions)}</Money>
-                  </span>
-                </div>
-              )}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 4px", borderTop: "1px dotted var(--color-border)" }}>
-                <span style={{ fontSize: 13, color: "var(--color-primary)" }}>Max ({fmtMonthYear(chartStats.maxM)})</span>
-                <span className="mono text-md" style={{ color: "var(--color-heading)" }}><Money>{fmtEUR(chartStats.maxV)}</Money></span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 4px", borderTop: "1px dotted var(--color-border)" }}>
-                <span style={{ fontSize: 13, color: "var(--color-primary)" }}>Min ({fmtMonthYear(chartStats.minM)})</span>
-                <span className="mono text-md" style={{ color: "var(--color-heading)" }}><Money>{fmtEUR(chartStats.minV)}</Money></span>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {items.length > 0 ? (
-        <div style={{ marginTop: 20, borderTop: "1px solid var(--color-border)", paddingTop: 16 }}>
-          <div onClick={() => setCompositionExpanded((v) => !v)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", marginBottom: compositionExpanded ? 14 : 0 }}>
-            <div style={{ width: 24 }} />
-            <div className="section-label" style={{ textAlign: "center" }}>{compositionTitle}</div>
-            <button aria-label={compositionExpanded ? "Comprimi composizione" : "Espandi composizione"} style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-primary)", display: "flex", transform: compositionExpanded ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
-              <ChevronDown size={18} />
-            </button>
-          </div>
-          {compositionExpanded && (
-            <div className="fade-in">
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 20, flexWrap: "wrap", width: "100%", maxWidth: "100%", boxSizing: "border-box" }}>
-                <div style={{ flexShrink: 0 }}>
-                  <PortfolioPieChart portfolios={items} getPct={(it) => grandTotalAtCursor > 0 ? (itemTotalsAtCursor(it).marketValue / grandTotalAtCursor) * 100 : 0} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: "1 1 140px", minWidth: 0, maxWidth: "100%" }}>
-                  {items.map((it, i) => {
-                    const pct = grandTotalAtCursor > 0 ? (itemTotalsAtCursor(it).marketValue / grandTotalAtCursor) * 100 : 0;
-                    return (
-                      <div key={it.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, minWidth: 0 }}>
-                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: PIE_COLORS[i % PIE_COLORS.length], flexShrink: 0 }} />
-                        <span style={{ color: "var(--color-heading)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{getName(it)}</span>
-                        <span className="mono" style={{ color: "var(--color-primary)", fontWeight: 600, flexShrink: 0 }}>{pct.toFixed(0)}%</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {(() => {
-                if (items.length === 0) return null;
-                const biggest = items.reduce((best, it) => (itemTotalsAtCursor(it).marketValue > itemTotalsAtCursor(best).marketValue ? it : best), items[0]);
-                const t = itemTotalsAtCursor(biggest);
-                const pct = grandTotalAtCursor > 0 ? (t.marketValue / grandTotalAtCursor) * 100 : 0;
-                const BIcon = getIcon(biggest);
-                return (
-                  <div style={{ marginTop: 18, display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: "var(--radius-lg)", background: "var(--color-bg-tint)" }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <BIcon size={16} color="var(--color-primary)" />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, color: "var(--color-primary)" }}>{biggestLabel}</div>
-                      <div className="text-md" style={{ color: "var(--color-heading)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getName(biggest)}</div>
-                    </div>
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div className="mono text-md" style={{ color: "var(--color-heading)" }}><Money>{fmtEUR(t.marketValue)}</Money></div>
-                      <div className="mono" style={{ fontSize: 12, color: "var(--color-primary)" }}>{pct.toFixed(0)}% del totale</div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {!hidePerformanceBox && (() => {
-                const candidates = items.filter((it) => returnPctLocal(itemTotalsAtCursor(it)) !== null);
-                if (candidates.length === 0) return null;
-                const best = candidates.reduce((a, b) => (returnPctLocal(itemTotalsAtCursor(b)) > returnPctLocal(itemTotalsAtCursor(a)) ? b : a));
-                const pct = returnPctLocal(itemTotalsAtCursor(best));
-                const BIcon = getIcon(best);
-                return (
-                  <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: "var(--radius-lg)", background: "var(--color-bg-tint)" }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <BIcon size={16} color="var(--color-primary)" />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, color: "var(--color-primary)" }}>{performantLabel}</div>
-                      <div className="text-md" style={{ color: "var(--color-heading)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getName(best)}</div>
-                    </div>
-                    <div className="mono text-md" style={{ flexShrink: 0, color: pct > 0 ? "var(--color-success)" : pct < 0 ? "var(--color-danger)" : "var(--color-primary)" }}>{fmtPctLocal(pct)}</div>
-                  </div>
-                );
-              })()}
-
-              {(() => {
-                if (items.length === 0 || chartSeries.months.length === 0) return null;
-                const startMap = buildMapAsOf(monthDateToFull(chartSeries.months[0]));
-                const endMap = buildMapAsOf(monthDateToFull(chartSeries.months[chartSeries.months.length - 1]));
-                let leader = null, leaderGrowth = -Infinity;
-                items.forEach((it) => {
-                  const growth = getTotalsFromMap(it, endMap).costBasis - getTotalsFromMap(it, startMap).costBasis;
-                  if (growth > leaderGrowth) { leaderGrowth = growth; leader = it; }
-                });
-                if (!leader || leaderGrowth <= 0) return null;
-                const LIcon = getIcon(leader);
-                return (
-                  <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: "var(--radius-lg)", background: "var(--color-bg-tint)" }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <LIcon size={16} color="var(--color-primary)" />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 11, color: "var(--color-primary)" }}>{growthLabel} ({chartRange})</div>
-                      <div className="text-md" style={{ color: "var(--color-heading)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{getName(leader)}</div>
-                    </div>
-                    <div className="mono text-md" style={{ flexShrink: 0, color: "var(--color-success)" }}><Money>+{fmtEUR(leaderGrowth)}</Money></div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-        </div>
-      ) : (
-        emptyMessage && <div style={{ marginTop: 20, textAlign: "center", fontSize: 13.5, color: "var(--color-primary)" }}>{emptyMessage}</div>
-      )}
-    </div>
-  );
+function StatsSection({ items,getName,getIcon,buildMapAsOf,getTotalsFromMap,historyMonths,cursorFullDate,chartTitle,compositionTitle,biggestLabel,performantLabel,growthLabel,hidePerformanceBox,emptyMessage,performanceSeries=null }) {
+ const [range,setRange]=useState("1Y"),[chartOpen,setChartOpen]=useState(true),[perfOpen,setPerfOpen]=useState(true),[statsOpen,setStatsOpen]=useState(true),[compOpen,setCompOpen]=useState(true),[activeId,setActiveId]=useState(null); const ranges=["3M","6M","YTD","1Y","2Y","3Y","5Y"];
+ const all=useMemo(()=>{const market=[],cost=[];historyMonths.forEach(m=>{const map=buildMapAsOf(monthDateToFull(m));let a=0,b=0;items.forEach(it=>{const t=getTotalsFromMap(it,map);a+=t.marketValue;b+=t.costBasis});market.push(a);cost.push(b)});return{months:historyMonths,market,cost}},[historyMonths,items]);
+ const series=useMemo(()=>{if(!all.months.length)return all;const end=all.months.findIndex(m=>m>currentMonthISO());const ep=end<0?all.months.length-1:Math.max(0,end-1),last=monthKeyToIdx(all.months[ep]);let first=range==="3M"?last-2:range==="6M"?last-5:range==="YTD"?Math.floor(last/12)*12:range==="1Y"?last-11:range==="2Y"?last-23:range==="3Y"?last-35:last-59;let sp=all.months.findIndex(m=>monthKeyToIdx(m)>=first);sp=Math.max(0,sp);return{months:all.months.slice(sp,ep+1),market:all.market.slice(sp,ep+1),cost:all.cost.slice(sp,ep+1)}},[all,range]);
+ const perf=useMemo(()=>{if(performanceSeries)return performanceSeries(series.months);const abs=series.market.map((v,i)=>series.cost[i]>0?(v-series.cost[i])/series.cost[i]*100:0),base=abs[0]||0;return{primary:abs.map(v=>v-base),secondary:null,primaryLabel:"Rendimento"}},[series,performanceSeries]);
+ const metrics=useMemo(()=>{if(!series.months.length)return null;const m=series.market,c=series.cost,months=series.months,first=m[0],last=m.at(-1),contrib=c.at(-1)-c[0],delta=last-first,gain=delta-contrib;let peak=m[0],draw=0,best=null,worst=null,pos=0,maxV=m[0],minV=m[0],maxM=months[0],minM=months[0];const rs=[];m.forEach((v,i)=>{if(v>maxV){maxV=v;maxM=months[i]}if(v<minV){minV=v;minM=months[i]}peak=Math.max(peak,v);if(peak>0)draw=Math.min(draw,(v-peak)/peak*100);if(i&&m[i-1]>0){const r=(v-m[i-1]-(c[i]-c[i-1]))/m[i-1]*100;rs.push(r);if(r>0)pos++;if(!best||r>best.v)best={v:r,m:months[i]};if(!worst||r<worst.v)worst={v:r,m:months[i]}}});const avg=rs.length?rs.reduce((a,b)=>a+b,0)/rs.length:0,sd=rs.length?Math.sqrt(rs.reduce((a,b)=>a+(b-avg)**2,0)/rs.length):0;return{delta,contrib,gain,ret:first>0?gain/first*100:null,pos,n:rs.length,best,worst,draw,stability:rs.length<3?"Dati insufficienti":sd<2?"Regolare":sd<5?"Moderatamente variabile":sd<10?"Variabile":"Molto variabile",share:delta>0?gain/delta*100:null,maxV,maxM,minV,minM}},[series]);
+ const map=useMemo(()=>buildMapAsOf(cursorFullDate),[cursorFullDate,items]), totals=it=>getTotalsFromMap(it,map), grand=items.reduce((a,it)=>a+totals(it).marketValue,0),cost=items.reduce((a,it)=>a+totals(it).costBasis,0),gain=grand-cost; const rows=[...items].map((it,i)=>({id:it.id,it,name:getName(it),value:totals(it).marketValue,pct:grand>0?totals(it).marketValue/grand*100:0,color:PIE_COLORS[i%PIE_COLORS.length]})).sort((a,b)=>b.value-a.value);
+ const Head=({title,open,setOpen})=><div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",marginBottom:open?10:0}}><div style={{width:24}}/><div className="section-label">{title}</div><ChevronDown size={18} color="var(--color-primary)" style={{transform:open?"rotate(180deg)":"none"}}/></div>;
+ if(!items.length&&emptyMessage)return <div style={{padding:30,textAlign:"center",color:"var(--color-primary)"}}>{emptyMessage}</div>;
+ return <div className="fade-in scrollbar-thin" style={{flex:1,minHeight:0,overflowY:"auto",overflowX:"hidden",padding:"10px 4px"}}><div className="no-scrollbar" style={{display:"flex",justifyContent:"center",gap:4,overflowX:"auto",marginBottom:14}}>{ranges.map(r=><button key={r} onClick={()=>setRange(r)} style={{padding:"6px 11px",borderRadius:20,border:"none",background:range===r?"var(--color-primary)":"var(--color-bg-tint)",color:range===r?"#fff":"var(--color-heading)",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{r}</button>)}</div><Head title={chartTitle} open={chartOpen} setOpen={setChartOpen}/>{chartOpen&&<><div style={{background:"var(--color-bg-tint)",borderRadius:"var(--radius-xl)",padding:"18px 16px"}}><div style={{textAlign:"center"}}><div className="mono" style={{fontSize:30,fontWeight:700}}><Money>{fmtEUR(grand)}</Money></div><div className="mono" style={{fontSize:13,color:gain>=0?"var(--color-success)":"var(--color-danger)"}}><Money>{gain>0?"+":""}{fmtEUR(gain)}</Money>{cost>0?` (${fmtPct(gain/cost*100)})`:""}</div></div><CapitalChart months={series.months} market={series.market} cost={series.cost} futureFromMonth={null}/></div></>}
+ <section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title="Andamento percentuale" open={perfOpen} setOpen={setPerfOpen}/>{perfOpen&&<div style={{background:"var(--color-bg-tint)",borderRadius:"var(--radius-xl)",padding:"14px 12px"}}><PerformanceChart months={series.months} {...perf}/></div>}</section>
+ {metrics&&<section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title="Statistiche" open={statsOpen} setOpen={setStatsOpen}/>{statsOpen&&<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>{[["Rendimento periodo",metrics.ret===null?"—":fmtPct(metrics.ret),metrics.ret],["Guadagno periodo",`${metrics.gain>0?"+":""}${fmtEUR(metrics.gain)}`,metrics.gain],["Contributi netti",`${metrics.contrib>0?"+":""}${fmtEUR(metrics.contrib)}`,metrics.contrib],["Mesi positivi",`${metrics.pos} su ${metrics.n}`,metrics.pos],["Miglior mese",metrics.best?`${fmtMonthYear(metrics.best.m)} · ${fmtPct(metrics.best.v)}`:"—",metrics.best?.v],["Peggior mese",metrics.worst?`${fmtMonthYear(metrics.worst.m)} · ${fmtPct(metrics.worst.v)}`:"—",metrics.worst?.v],["Massimo calo dal picco",fmtPct(metrics.draw),metrics.draw],["Stabilità rendimento",metrics.stability,null],["Crescita da rendimenti",metrics.share===null?"—":`${metrics.share.toFixed(0)}%`,metrics.share],["Massimo capitale",`${fmtEUR(metrics.maxV)} · ${fmtMonthYear(metrics.maxM)}`,null],["Minimo capitale",`${fmtEUR(metrics.minV)} · ${fmtMonthYear(metrics.minM)}`,null]].map(([l,v,s])=><div key={l} style={{padding:10,borderRadius:12,background:"var(--color-bg-tint)",minWidth:0}}><div style={{fontSize:10.5,color:"var(--color-border-light)",marginBottom:4}}>{l}</div><div className="mono" style={{fontSize:11.5,fontWeight:700,color:s>0?"var(--color-success)":s<0?"var(--color-danger)":"var(--color-heading)"}}><Money>{v}</Money></div></div>)}</div>}</section>}
+ <section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title={compositionTitle} open={compOpen} setOpen={setCompOpen}/>{compOpen&&<><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}><PortfolioPieChart rows={rows} activeId={activeId} setActiveId={setActiveId}/><div style={{flex:"1 1 180px"}}>{rows.map((r,i)=><div key={r.id} onClick={()=>setActiveId(activeId===r.id?null:r.id)} style={{display:"grid",gridTemplateColumns:"12px minmax(0,1fr) auto",gap:8,alignItems:"center",padding:"8px",borderRadius:9,background:activeId===r.id?"var(--color-bg-tint)":"transparent",opacity:activeId&&activeId!==r.id?.35:1,cursor:"pointer"}}><i style={{width:10,height:10,borderRadius:"50%",background:PIE_COLORS[i%PIE_COLORS.length]}}/><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span><span className="mono" style={{fontSize:11,textAlign:"right",fontWeight:700}}>{r.pct.toFixed(0)}%<br/><Money>{fmtEUR(r.value)}</Money></span></div>)}</div></div>{rows[0]&&<div style={{marginTop:14,padding:"12px 14px",borderRadius:12,background:"var(--color-bg-tint)",display:"flex",justifyContent:"space-between"}}><span><small style={{color:"var(--color-primary)"}}>{biggestLabel}</small><br/><b>{rows[0].name}</b></span><span className="mono" style={{textAlign:"right"}}><Money>{fmtEUR(rows[0].value)}</Money><br/><small>{rows[0].pct.toFixed(0)}% del totale</small></span></div>}</>}</section></div>;
 }
-
 function InvestApp({ session, onBack }) {
   const kbOffset = useKeyboardOffset();
   const userId = session.user.id;
@@ -2693,7 +2892,7 @@ function InvestApp({ session, onBack }) {
     return { delta, pct };
   };
 
-  const [dashboardView, setDashboardView] = useState("list");
+  const [dashboardView, setDashboardView] = useState("chart");
 
   const historyMonths = useMemo(() => {
     if (valuations.length === 0) return [];
@@ -2914,28 +3113,12 @@ function InvestApp({ session, onBack }) {
               <button onClick={() => goCursor(1)} aria-label="Mese successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-border-light)", flexShrink: 0 }}><ChevronRight size={18} /></button>
 
               {datePickerOpen && (
-                <>
-                  <div onClick={() => setDatePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
-                  <div className="fade-in" style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, zIndex: 40 }}>
-                    <div style={{ maxWidth: 260, margin: "0 auto", background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 14 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                        <button onClick={() => setPickerYear((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronLeft size={18} /></button>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-heading)" }}>{pickerYear}</div>
-                        <button onClick={() => setPickerYear((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronRight size={18} /></button>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-                        {MESI.map((m, i) => {
-                          const isSelected = pickerYear === cursor.year && i === cursor.month;
-                          return (
-                            <button key={m} onClick={() => { setCursor({ year: pickerYear, month: i }); setDatePickerOpen(false); }} className="text-xs" style={{ padding: "9px 0", borderRadius: "var(--radius-sm)", border: isSelected ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: isSelected ? "var(--color-primary)" : "#FFFFFF", color: isSelected ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
-                              {m.slice(0, 3)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </>
+                <MonthYearPickerPopup
+                  pickerYear={pickerYear} setPickerYear={setPickerYear}
+                  selectedYear={cursor.year} selectedMonth={cursor.month}
+                  onSelectMonth={(y, m) => { setCursor({ year: y, month: m }); setDatePickerOpen(false); }}
+                  onClose={() => setDatePickerOpen(false)}
+                />
               )}
             </div>
             <div key={`${cursor.year}-${cursor.month}`} className="fade-in" style={{ textAlign: "center", padding: "2px 0 8px", borderBottom: "1px solid var(--color-border)", flexShrink: 0 }}>
@@ -3051,28 +3234,12 @@ function InvestApp({ session, onBack }) {
               <button onClick={() => goCursor(1)} aria-label="Mese successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-border-light)", flexShrink: 0 }}><ChevronRight size={18} /></button>
 
               {datePickerOpen && (
-                <>
-                  <div onClick={() => setDatePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
-                  <div className="fade-in" style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, zIndex: 40 }}>
-                    <div style={{ maxWidth: 260, margin: "0 auto", background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 14 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                        <button onClick={() => setPickerYear((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronLeft size={18} /></button>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-heading)" }}>{pickerYear}</div>
-                        <button onClick={() => setPickerYear((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronRight size={18} /></button>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-                        {MESI.map((m, i) => {
-                          const isSelected = pickerYear === cursor.year && i === cursor.month;
-                          return (
-                            <button key={m} onClick={() => { setCursor({ year: pickerYear, month: i }); setDatePickerOpen(false); }} className="text-xs" style={{ padding: "9px 0", borderRadius: "var(--radius-sm)", border: isSelected ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: isSelected ? "var(--color-primary)" : "#FFFFFF", color: isSelected ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
-                              {m.slice(0, 3)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </>
+                <MonthYearPickerPopup
+                  pickerYear={pickerYear} setPickerYear={setPickerYear}
+                  selectedYear={cursor.year} selectedMonth={cursor.month}
+                  onSelectMonth={(y, m) => { setCursor({ year: y, month: m }); setDatePickerOpen(false); }}
+                  onClose={() => setDatePickerOpen(false)}
+                />
               )}
             </div>
             <div key={`${cursor.year}-${cursor.month}`} className="fade-in" style={{ textAlign: "center", padding: "2px 0 8px", borderBottom: "1px solid var(--color-border)", flexShrink: 0 }}>
@@ -3484,7 +3651,7 @@ function InsuranceApp({ session, onBack }) {
 
   const returnPct = (t) => (t.costBasis > 0 ? (t.gain / t.costBasis) * 100 : null);
 
-  const [dashboardView, setDashboardView] = useState("list");
+  const [dashboardView, setDashboardView] = useState("chart");
   const historyMonths = useMemo(() => {
     if (valuations.length === 0) return [];
     const monthKeys = valuations.map((v) => fullDateToMonth(v.value_date));
@@ -3635,28 +3802,12 @@ function InsuranceApp({ session, onBack }) {
               <button onClick={() => goCursor(1)} aria-label="Mese successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-border-light)", flexShrink: 0 }}><ChevronRight size={18} /></button>
 
               {datePickerOpen && (
-                <>
-                  <div onClick={() => setDatePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
-                  <div className="fade-in" style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, zIndex: 40 }}>
-                    <div style={{ maxWidth: 260, margin: "0 auto", background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 14 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                        <button onClick={() => setPickerYear((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronLeft size={18} /></button>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-heading)" }}>{pickerYear}</div>
-                        <button onClick={() => setPickerYear((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronRight size={18} /></button>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-                        {MESI.map((m, i) => {
-                          const isSelected = pickerYear === cursor.year && i === cursor.month;
-                          return (
-                            <button key={m} onClick={() => { setCursor({ year: pickerYear, month: i }); setDatePickerOpen(false); }} className="text-xs" style={{ padding: "9px 0", borderRadius: "var(--radius-sm)", border: isSelected ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: isSelected ? "var(--color-primary)" : "#FFFFFF", color: isSelected ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
-                              {m.slice(0, 3)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </>
+                <MonthYearPickerPopup
+                  pickerYear={pickerYear} setPickerYear={setPickerYear}
+                  selectedYear={cursor.year} selectedMonth={cursor.month}
+                  onSelectMonth={(y, m) => { setCursor({ year: y, month: m }); setDatePickerOpen(false); }}
+                  onClose={() => setDatePickerOpen(false)}
+                />
               )}
             </div>
             <div key={`${cursor.year}-${cursor.month}`} className="fade-in" style={{ textAlign: "center", padding: "4px 0 14px", borderBottom: "1px solid var(--color-border)", flexShrink: 0 }}>
@@ -4152,28 +4303,12 @@ function RealEstateApp({ session, onBack }) {
               <button onClick={() => goCursor(1)} aria-label="Mese successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 4, color: "var(--color-border-light)", flexShrink: 0 }}><ChevronRight size={18} /></button>
 
               {datePickerOpen && (
-                <>
-                  <div onClick={() => setDatePickerOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
-                  <div className="fade-in" style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 6, zIndex: 40 }}>
-                    <div style={{ maxWidth: 260, margin: "0 auto", background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 14 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                        <button onClick={() => setPickerYear((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronLeft size={18} /></button>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-heading)" }}>{pickerYear}</div>
-                        <button onClick={() => setPickerYear((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "var(--color-primary)" }}><ChevronRight size={18} /></button>
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
-                        {MESI.map((m, i) => {
-                          const isSelected = pickerYear === cursor.year && i === cursor.month;
-                          return (
-                            <button key={m} onClick={() => { setCursor({ year: pickerYear, month: i }); setDatePickerOpen(false); }} className="text-xs" style={{ padding: "9px 0", borderRadius: "var(--radius-sm)", border: isSelected ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: isSelected ? "var(--color-primary)" : "#FFFFFF", color: isSelected ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
-                              {m.slice(0, 3)}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </>
+                <MonthYearPickerPopup
+                  pickerYear={pickerYear} setPickerYear={setPickerYear}
+                  selectedYear={cursor.year} selectedMonth={cursor.month}
+                  onSelectMonth={(y, m) => { setCursor({ year: y, month: m }); setDatePickerOpen(false); }}
+                  onClose={() => setDatePickerOpen(false)}
+                />
               )}
             </div>
             <div key={`${cursor.year}-${cursor.month}`} className="fade-in" style={{ textAlign: "center", padding: "4px 0 14px", borderBottom: "1px solid var(--color-border)", flexShrink: 0 }}>
@@ -4470,9 +4605,21 @@ function CashflowApp({ session, onBack }) {
   const [saveState, setSaveState] = useState("idle");
   const [lastErrorMsg, setLastErrorMsg] = useState("");
   const [activeAccountId, setActiveAccountId] = useState("all");
-  const [viewMode, setViewMode] = useState("monthly");
+  const [viewMode, setViewMode] = useState("annual");
+  const [displayStyle, setDisplayStyle] = useState("dashboard");
+  const [acctMenuOpen, setAcctMenuOpen] = useState(false);
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
 
   const [yearCursor, setYearCursor] = useState(() => new Date().getFullYear());
+  const [monthCursor, setMonthCursor] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
+  const goMonthCursor = (delta) => {
+    setMonthCursor((c) => {
+      const idx = c.year * 12 + c.month + delta;
+      return { year: Math.floor(idx / 12), month: ((idx % 12) + 12) % 12 };
+    });
+  };
 
   const [addAccountStep, setAddAccountStep] = useState(null);
   const [pendingAccountId, setPendingAccountId] = useState(null);
@@ -4554,101 +4701,83 @@ function CashflowApp({ session, onBack }) {
     return chain[prevKey] ? (chain[prevKey].bankBalance ?? null) : null;
   };
 
+  const computeMonthRow = (year, month) => {
+    const key = `${year}-${String(month + 1).padStart(2, "0")}`;
+    if (activeAccountId === "all") {
+      let income = 0, investments = 0, expenses = 0, bankBalance = 0, hasEntry = false;
+      accounts.forEach((acc) => {
+        const c = chainsByAccount[acc.id];
+        const r = c ? c[key] : null;
+        if (r && r.hasEntry) {
+          hasEntry = true;
+          income += r.income; investments += r.investments; expenses += r.expenses;
+          bankBalance += (r.bankBalance ?? 0);
+        }
+      });
+      return { key, monthIdx: month, hasEntry, income, investments, expenses, bankBalance: hasEntry ? bankBalance : null, manualOverride: false, ...(hasEntry ? cashflowDerived(income, investments, expenses) : { netIncome: null, saving: null, savingRate: null }) };
+    } else {
+      const base = { key, monthIdx: month, hasEntry: false, bankBalance: null, ...(chain[key] || {}) };
+      return { ...base, ...(base.hasEntry ? cashflowDerived(base.income, base.investments, base.expenses) : { netIncome: null, saving: null, savingRate: null }) };
+    }
+  };
+
   const yearRows = useMemo(() => {
     const rows = [];
-    if (activeAccountId === "all") {
-      for (let m = 0; m < 12; m++) {
-        const key = `${yearCursor}-${String(m + 1).padStart(2, "0")}`;
-        let income = 0, investments = 0, expenses = 0, bankBalance = 0, hasEntry = false;
-        accounts.forEach((acc) => {
-          const c = chainsByAccount[acc.id];
-          const r = c ? c[key] : null;
-          if (r && r.hasEntry) {
-            hasEntry = true;
-            income += r.income; investments += r.investments; expenses += r.expenses;
-            bankBalance += (r.bankBalance ?? 0);
-          }
-        });
-        rows.push({ key, monthIdx: m, hasEntry, income, investments, expenses, bankBalance: hasEntry ? bankBalance : null, manualOverride: false, ...(hasEntry ? cashflowDerived(income, investments, expenses) : { netIncome: null, saving: null, savingRate: null }) });
-      }
-    } else {
-      for (let m = 0; m < 12; m++) {
-        const key = `${yearCursor}-${String(m + 1).padStart(2, "0")}`;
-        const base = { key, monthIdx: m, hasEntry: false, bankBalance: null, ...(chain[key] || {}) };
-        rows.push({ ...base, ...(base.hasEntry ? cashflowDerived(base.income, base.investments, base.expenses) : { netIncome: null, saving: null, savingRate: null }) });
-      }
-    }
+    for (let m = 0; m < 12; m++) rows.push(computeMonthRow(yearCursor, m));
     return rows;
   }, [activeAccountId, chain, chainsByAccount, accounts, yearCursor]);
 
-  const yearTotals = useMemo(() => {
-    let income = 0, investments = 0, expenses = 0, finalBalance = null;
-    yearRows.forEach((r) => {
-      if (r.hasEntry) { income += r.income; investments += r.investments; expenses += r.expenses; }
+  const singleMonthRow = useMemo(() => computeMonthRow(monthCursor.year, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
+
+  const prevMonthRow = useMemo(() => {
+    const idx = monthCursor.year * 12 + monthCursor.month - 1;
+    return computeMonthRow(Math.floor(idx / 12), ((idx % 12) + 12) % 12);
+  }, [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
+
+  const pctChange = (curr, prev) => (prev !== 0 && prev !== null && prev !== undefined) ? ((curr - prev) / Math.abs(prev)) * 100 : null;
+
+  const computeYearAgg = (year) => {
+    let income = 0, investments = 0, expenses = 0, finalBalance = null, any = false;
+    for (let m = 0; m < 12; m++) {
+      const r = computeMonthRow(year, m);
+      if (r.hasEntry) { any = true; income += r.income; investments += r.investments; expenses += r.expenses; }
       if (r.bankBalance !== null && r.bankBalance !== undefined) finalBalance = r.bankBalance;
-    });
+    }
     const derived = cashflowDerived(income, investments, expenses);
-    return { income, investments, expenses, finalBalance, ...derived };
-  }, [yearRows]);
+    return { income, investments, expenses, finalBalance, hasData: any, ...derived };
+  };
 
-  const annualRows = useMemo(() => {
-    let minYear = null;
-    const nowYear = new Date().getFullYear();
-    let maxYear = nowYear;
-    if (activeAccountId === "all") {
-      accounts.forEach((acc) => {
-        const s = settingsByAccount[acc.id];
-        if (s) { const y = Number(s.monthKey.split("-")[0]); if (minYear === null || y < minYear) minYear = y; }
-      });
-    } else if (settings) {
-      minYear = Number(settings.monthKey.split("-")[0]);
-    }
-    entries.forEach((e) => { const y = Number(fullDateToMonth(e.value_date).split("-")[0]); if (y > maxYear) maxYear = y; });
-    if (minYear === null) return [];
+  const yearTotals = useMemo(() => computeYearAgg(yearCursor), [activeAccountId, chain, chainsByAccount, accounts, yearCursor]);
+  const prevYearTotals = useMemo(() => computeYearAgg(yearCursor - 1), [activeAccountId, chain, chainsByAccount, accounts, yearCursor]);
+  const computeYtdAgg = (year, endMonth) => {
+    let income = 0, investments = 0, expenses = 0, finalBalance = null, any = false;
     const rows = [];
-    for (let y = minYear; y <= maxYear; y++) {
-      let income = 0, investments = 0, expenses = 0, finalBalance = null, any = false;
-      if (activeAccountId === "all") {
-        let sumBalance = 0;
-        accounts.forEach((acc) => {
-          const c = chainsByAccount[acc.id];
-          if (!c) return;
-          for (let m = 0; m < 12; m++) {
-            const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-            const r = c[key];
-            if (r && r.hasEntry) { any = true; income += r.income; investments += r.investments; expenses += r.expenses; }
-          }
-          let accBalance = null;
-          for (let m = 0; m < 12; m++) {
-            const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-            const r = c[key];
-            if (r && r.bankBalance !== null && r.bankBalance !== undefined) accBalance = r.bankBalance;
-          }
-          if (accBalance !== null) sumBalance += accBalance;
-        });
-        finalBalance = any ? sumBalance : null;
-      } else {
-        const c = chainsByAccount[activeAccountId] || {};
-        for (let m = 0; m < 12; m++) {
-          const key = `${y}-${String(m + 1).padStart(2, "0")}`;
-          const r = c[key];
-          if (r && r.hasEntry) { any = true; income += r.income; investments += r.investments; expenses += r.expenses; }
-          if (r && r.bankBalance !== null && r.bankBalance !== undefined) finalBalance = r.bankBalance;
-        }
-      }
-      rows.push({ year: y, income, investments, expenses, finalBalance, hasData: any, ...(any ? cashflowDerived(income, investments, expenses) : { netIncome: null, saving: null, savingRate: null }) });
+    for (let m = 0; m <= endMonth; m++) {
+      const r = computeMonthRow(year, m);
+      rows.push(r);
+      if (r.hasEntry) { any = true; income += r.income; investments += r.investments; expenses += r.expenses; }
+      if (r.bankBalance !== null && r.bankBalance !== undefined) finalBalance = r.bankBalance;
     }
-    return rows.reverse();
-  }, [accounts, settingsByAccount, settings, activeAccountId, chainsByAccount, entries]);
-
+    const derived = cashflowDerived(income, investments, expenses);
+    return { rows, income, investments, expenses, finalBalance, hasData: any, ...derived };
+  };
+  const ytdTotals = useMemo(() => computeYtdAgg(monthCursor.year, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
+  const prevYtdTotals = useMemo(() => computeYtdAgg(monthCursor.year - 1, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
+  const summaryYear = viewMode === "ytd" ? monthCursor.year : yearCursor;
+  const summaryRows = viewMode === "ytd" ? ytdTotals.rows : yearRows;
+  const summaryTotals = viewMode === "ytd" ? ytdTotals : yearTotals;
+  const prevSummaryTotals = viewMode === "ytd" ? prevYtdTotals : prevYearTotals;
+  const summaryPeriodLabel = viewMode === "ytd" ? `Gen–${MESI[monthCursor.month].slice(0, 3)} ${String(monthCursor.year).slice(-2)}` : String(yearCursor);
+  const summaryComparisonLabel = viewMode === "ytd" ? `Gen–${MESI[monthCursor.month].slice(0, 3)} ${String(monthCursor.year - 1).slice(-2)}` : String(yearCursor - 1);
 
   const openingYear = settings ? Number(settings.monthKey.split("-")[0]) : null;
+  const infoYear = viewMode === "ytd" ? monthCursor.year : yearCursor;
   let openingInfo = null;
   if (activeAccountId !== "all" && settings) {
-    if (yearCursor === openingYear) {
+    if (infoYear === openingYear) {
       openingInfo = { key: settings.monthKey, value: settings.balance, isOpening: true, missing: false };
-    } else if (yearCursor > openingYear) {
-      const prevDecKey = `${yearCursor - 1}-12`;
+    } else if (infoYear > openingYear) {
+      const prevDecKey = `${infoYear - 1}-12`;
       const val = prevDecKey === settings.monthKey ? settings.balance : (chain[prevDecKey] ? (chain[prevDecKey].bankBalance ?? null) : null);
       openingInfo = { key: prevDecKey, value: val, isOpening: false, missing: val === null };
     }
@@ -4689,10 +4818,11 @@ function CashflowApp({ session, onBack }) {
     setEditingOpening(false);
   };
 
-  const openRow = (monthIdx) => {
+  const openRow = (monthIdx, yearOverride) => {
+    const year = yearOverride !== undefined ? yearOverride : yearCursor;
     if (activeAccountId === "all" || !settings) return;
-    const key = `${yearCursor}-${String(monthIdx + 1).padStart(2, "0")}`;
-    const idx = yearCursor * 12 + monthIdx;
+    const key = `${year}-${String(monthIdx + 1).padStart(2, "0")}`;
+    const idx = year * 12 + monthIdx;
     const openIdx = monthKeyToIdx(settings.monthKey);
     if (idx <= openIdx) return;
     const entry = entriesMap[key];
@@ -4821,7 +4951,6 @@ function CashflowApp({ session, onBack }) {
   }
 
   const todayIdx = (() => { const d = new Date(); return d.getFullYear() * 12 + d.getMonth(); })();
-  const fmtSavingRate = (p) => `${p > 0 ? "+" : ""}${p.toFixed(1)}%`;
 
   return (
     <div style={{ height: "100dvh", width: "100%", background: "#FFFFFF", overflow: "hidden", display: "flex", flexDirection: "column" }}>
@@ -4844,11 +4973,79 @@ function CashflowApp({ session, onBack }) {
           </div>
         ) : (
           <>
-            <div className="no-scrollbar" style={{ display: "flex", gap: 6, marginBottom: 10, flexShrink: 0, overflowX: "auto" }}>
-              <button onClick={() => setActiveAccountId("all")} style={{ padding: "6px 14px", borderRadius: "var(--radius-pill)", border: activeAccountId === "all" ? "1px solid var(--color-primary)" : "1.5px solid var(--color-heading)", background: activeAccountId === "all" ? "var(--color-primary)" : "#FFFFFF", color: activeAccountId === "all" ? "#FFFFFF" : "var(--color-heading)", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>Totale</button>
-              {accounts.map((a) => (
-                <button key={a.id} onClick={() => setActiveAccountId(a.id)} style={{ padding: "6px 12px", borderRadius: "var(--radius-pill)", border: activeAccountId === a.id ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: activeAccountId === a.id ? "var(--color-primary)" : "#FFFFFF", color: activeAccountId === a.id ? "#FFFFFF" : "var(--color-primary)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>{a.name}</button>
-              ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10, flexShrink: 0 }}>
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button onClick={() => setViewMenuOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-bg-tint)", color: "var(--color-primary)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                  {viewMode === "monthly" ? "Mensile" : viewMode === "ytd" ? "Year to Date" : "Annuale"} <ChevronDown size={13} />
+                </button>
+                {viewMenuOpen && (
+                  <>
+                    <div onClick={() => setViewMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
+                    <div className="fade-in" style={{ position: "absolute", top: "100%", left: 0, marginTop: 6, zIndex: 40, minWidth: 130, background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 6 }}>
+                      <button onClick={() => { setViewMode("monthly"); setDisplayStyle("dashboard"); setViewMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: viewMode === "monthly" ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>Mensile</button>
+                      <button onClick={() => { setViewMode("ytd"); setDisplayStyle("dashboard"); setViewMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: viewMode === "ytd" ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>Year to Date</button>
+                      <button onClick={() => { setViewMode("annual"); setDisplayStyle("dashboard"); setViewMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: viewMode === "annual" ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>Annuale</button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 2, minWidth: 0 }}>
+                {viewMode === "monthly" ? (
+                  <>
+                    <button onClick={() => goMonthCursor(-1)} aria-label="Mese precedente" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronLeft size={16} /></button>
+                    <span onClick={() => { setPickerYear(monthCursor.year); setDatePickerOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: "var(--color-border-light)", whiteSpace: "nowrap", textTransform: "capitalize", cursor: "pointer" }}>
+                      <Calendar size={13} /> {MESI[monthCursor.month].slice(0, 3)} {String(monthCursor.year).slice(-2)}
+                    </span>
+                    <button onClick={() => goMonthCursor(1)} aria-label="Mese successivo" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronRight size={16} /></button>
+                  </>
+                ) : viewMode === "ytd" ? (
+                  <>
+                    <button onClick={() => setMonthCursor((c) => ({ ...c, year: c.year - 1 }))} aria-label="Anno precedente" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronLeft size={16} /></button>
+                    <span onClick={() => { setPickerYear(monthCursor.year); setDatePickerOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: "var(--color-border-light)", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      <Calendar size={13} /> Gen–{MESI[monthCursor.month].slice(0, 3)} {String(monthCursor.year).slice(-2)}
+                    </span>
+                    <button onClick={() => setMonthCursor((c) => ({ ...c, year: c.year + 1 }))} aria-label="Anno successivo" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronRight size={16} /></button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={() => setYearCursor((y) => y - 1)} aria-label="Anno precedente" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronLeft size={16} /></button>
+                    <span onClick={() => { setPickerYear(yearCursor); setDatePickerOpen(true); }} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, fontWeight: 600, color: "var(--color-border-light)", whiteSpace: "nowrap", cursor: "pointer" }}>
+                      <Calendar size={13} /> {yearCursor}
+                    </span>
+                    <button onClick={() => setYearCursor((y) => y + 1)} aria-label="Anno successivo" className="btn-icon" style={{ padding: 4, color: "var(--color-border-light)" }}><ChevronRight size={16} /></button>
+                  </>
+                )}
+
+                {datePickerOpen && (
+                  <MonthYearPickerPopup
+                    pickerYear={pickerYear} setPickerYear={setPickerYear}
+                    mode={viewMode !== "annual" ? "month" : "year"}
+                    selectedYear={monthCursor.year} selectedMonth={monthCursor.month}
+                    onSelectMonth={(y, m) => { setMonthCursor({ year: y, month: m }); setDatePickerOpen(false); }}
+                    onSelectYear={(y) => { setYearCursor(y); setDatePickerOpen(false); }}
+                    onClose={() => setDatePickerOpen(false)}
+                    anchor="center"
+                  />
+                )}
+              </div>
+
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button onClick={() => setAcctMenuOpen((v) => !v)} style={{ display: "flex", alignItems: "center", gap: 3, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-bg-tint)", color: "var(--color-primary)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {activeAccountId === "all" ? "Totale" : (accounts.find((a) => a.id === activeAccountId)?.name || "")} <ChevronDown size={13} style={{ flexShrink: 0 }} />
+                </button>
+                {acctMenuOpen && (
+                  <>
+                    <div onClick={() => setAcctMenuOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 39 }} />
+                    <div className="fade-in" style={{ position: "absolute", top: "100%", right: 0, marginTop: 6, zIndex: 40, minWidth: 160, background: "#FFFFFF", border: "1px solid var(--color-border)", borderRadius: "var(--radius-lg)", boxShadow: "0 12px 28px rgba(5,91,101,0.16)", padding: 6 }}>
+                      <button onClick={() => { setActiveAccountId("all"); setAcctMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: activeAccountId === "all" ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer" }}>Totale</button>
+                      {accounts.map((a) => (
+                        <button key={a.id} onClick={() => { setActiveAccountId(a.id); setAcctMenuOpen(false); }} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 10px", borderRadius: "var(--radius-sm)", border: "none", background: activeAccountId === a.id ? "var(--color-bg-tint)" : "transparent", color: "var(--color-heading)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>{a.name}</button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             {activeAccountId !== "all" && !settings ? (
@@ -4860,25 +5057,8 @@ function CashflowApp({ session, onBack }) {
               </div>
             ) : (
               <>
-                <div style={{ display: "flex", justifyContent: "center", padding: "0 0 10px", flexShrink: 0 }}>
-                  <div style={{ display: "flex", background: "var(--color-bg-tint)", borderRadius: "var(--radius-md)", padding: 3, width: "100%", maxWidth: 280 }}>
-                    <button onClick={() => setViewMode("monthly")} style={{ flex: 1, padding: "5px 0", borderRadius: "var(--radius-sm)", border: "none", background: viewMode === "monthly" ? "#FFFFFF" : "transparent", color: viewMode === "monthly" ? "var(--color-primary)" : "var(--color-primary)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: viewMode === "monthly" ? "0 1px 4px rgba(5,91,101,0.1)" : "none" }}>
-                      Mensile
-                    </button>
-                    <button onClick={() => setViewMode("annual")} style={{ flex: 1, padding: "5px 0", borderRadius: "var(--radius-sm)", border: "none", background: viewMode === "annual" ? "#FFFFFF" : "transparent", color: viewMode === "annual" ? "var(--color-primary)" : "var(--color-primary)", fontSize: 13.5, fontWeight: 600, cursor: "pointer", boxShadow: viewMode === "annual" ? "0 1px 4px rgba(5,91,101,0.1)" : "none" }}>
-                      Annuale
-                    </button>
-                  </div>
-                </div>
-
-                {viewMode === "monthly" ? (
+                {viewMode !== "monthly" ? (
                   <>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-                  <button onClick={() => setYearCursor((y) => y - 1)} aria-label="Anno precedente" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "var(--color-heading)" }}><ChevronLeft size={28} /></button>
-                  <div style={{ fontSize: 24, fontWeight: 700, color: "var(--color-heading)" }}>{yearCursor}</div>
-                  <button onClick={() => setYearCursor((y) => y + 1)} aria-label="Anno successivo" style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: "var(--color-heading)" }}><ChevronRight size={28} /></button>
-                </div>
-
                 {activeAccountId === "all" ? (
                   <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--color-border-light)", padding: "2px 0 12px", borderBottom: "1px solid var(--color-border)", marginBottom: 10, flexShrink: 0 }}>
                     Vista aggregata di tutti i conti — seleziona un conto per modificare i dati
@@ -4903,93 +5083,300 @@ function CashflowApp({ session, onBack }) {
                   </div>
                 )}
 
-                <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-                <div className="scrollbar-thin" style={{ height: "100%", overflowY: "auto", overflowX: "auto" }}>
-                  <div style={{ width: 514 }}>
-                    <div style={{ display: "flex", alignItems: "center", padding: "0 4px 6px" }}>
-                      <div style={{ width: 42, flexShrink: 0, position: "sticky", left: 0, background: "#FFFFFF", zIndex: 2 }} />
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Entrate</div>
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Invest.</div>
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Spese</div>
-                      <div style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Net Inc.</div>
-                      <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saving</div>
-                      <div style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Sav. %</div>
-                      <div style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saldo</div>
-                    </div>
+                {displayStyle === "dashboard" ? (() => {
+                  if (!summaryTotals.hasData) {
+                    return (
+                      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "20px 10px" }}>
+                        <BarChart3 size={34} color="var(--color-border-light)" style={{ marginBottom: 12 }} />
+                        <div style={{ fontSize: 14, color: "var(--color-primary)" }}>Nessun dato disponibile per {summaryPeriodLabel}.</div>
+                      </div>
+                    );
+                  }
+                  const incomeChange = pctChange(summaryTotals.income, prevSummaryTotals.income);
+                  const expChange = pctChange(summaryTotals.expenses, prevSummaryTotals.expenses);
+                  const investChange = pctChange(summaryTotals.investments, prevSummaryTotals.investments);
+                  const ringPct = (summaryTotals.savingRate !== null && summaryTotals.savingRate > 0) ? Math.min(summaryTotals.savingRate, 100) : 0;
+                  const barMonths = MESI.map((m) => m.slice(0, 3));
+                  const barValues = summaryRows.map((r) => r.saving);
+                  return (
+                    <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingBottom: 4 }}>
+                      <div className="section-label" style={{ textAlign: "left", margin: "4px 0 8px" }}>I tuoi movimenti</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                        <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                            <span className="text-sm" style={{ color: "var(--color-heading)" }}>Entrate</span>
+                            <div style={{ width: 22, height: 22, borderRadius: "var(--radius-pill)", background: "#E9FBF3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              {incomeChange !== null && incomeChange < 0 ? <TrendingDown size={12} color="var(--color-danger)" /> : <TrendingUp size={12} color="var(--color-success)" />}
+                            </div>
+                          </div>
+                          <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: "var(--color-success)", marginBottom: 4 }}><Money>{fmtEUR(summaryTotals.income)}</Money></div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                            <span style={{ color: "var(--color-border-light)" }}>vs {summaryComparisonLabel}</span>
+                            <span className="mono" style={{ fontWeight: 600, color: incomeChange === null ? "var(--color-border-light)" : (incomeChange >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{incomeChange !== null ? fmtPct(incomeChange) : "—"}</span>
+                          </div>
+                        </div>
 
-                    {yearRows.map((r) => {
-                      const idx = yearCursor * 12 + r.monthIdx;
+                        <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                            <span className="text-sm" style={{ color: "var(--color-heading)" }}>Investito</span>
+                            <div style={{ width: 22, height: 22, borderRadius: "var(--radius-pill)", background: "#EAF2F3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              {investChange !== null && investChange < 0 ? <TrendingDown size={12} color="var(--color-primary)" /> : <TrendingUp size={12} color="var(--color-primary)" />}
+                            </div>
+                          </div>
+                          <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: "var(--color-primary)", marginBottom: 4 }}><Money>{fmtEUR(summaryTotals.investments)}</Money></div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                            <span style={{ color: "var(--color-border-light)" }}>vs {summaryComparisonLabel}</span>
+                            <span className="mono" style={{ fontWeight: 600, color: "var(--color-primary)" }}>{investChange !== null ? fmtPct(investChange) : "—"}</span>
+                          </div>
+                        </div>
+
+                        <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                            <span className="text-sm" style={{ color: "var(--color-heading)" }}>Uscite</span>
+                            <div style={{ width: 22, height: 22, borderRadius: "var(--radius-pill)", background: "var(--color-danger-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                              {expChange !== null && expChange < 0 ? <TrendingDown size={12} color="var(--color-success)" /> : <TrendingUp size={12} color="var(--color-danger)" />}
+                            </div>
+                          </div>
+                          <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: "var(--color-danger)", marginBottom: 4 }}><Money>{fmtEUR(summaryTotals.expenses)}</Money></div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                            <span style={{ color: "var(--color-border-light)" }}>vs {summaryComparisonLabel}</span>
+                            <span className="mono" style={{ fontWeight: 600, color: expChange === null ? "var(--color-border-light)" : (expChange <= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{expChange !== null ? fmtPct(expChange) : "—"}</span>
+                          </div>
+                        </div>
+
+                        <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                            <span className="text-sm" style={{ color: "var(--color-heading)" }}>Saldo netto</span>
+                          </div>
+                          <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: summaryTotals.netIncome === null ? "var(--color-border-light)" : (summaryTotals.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)"), marginBottom: 4 }}>{summaryTotals.netIncome !== null ? <Money>{fmtEUR(summaryTotals.netIncome)}</Money> : "—"}</div>
+                          <div style={{ fontSize: 10.5, color: "var(--color-border-light)" }}>variazione conto</div>
+                        </div>
+                      </div>
+
+                      <div className="section-label" style={{ textAlign: "left", margin: "4px 0 8px" }}>Andamento risparmio</div>
+                      <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch", padding: "14px 10px" }}>
+                        <SavingBarChart months={barMonths} values={barValues} />
+                      </div>
+
+                      <div className="section-label" style={{ textAlign: "left", margin: "12px 0 8px" }}>Il risultato del periodo</div>
+                      <div className="card-item" style={{ justifyContent: "space-between", marginBottom: 10 }}>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Risparmiato</div>
+                          <div className="mono" style={{ fontSize: 24, fontWeight: 600, color: summaryTotals.saving === null ? "var(--color-border-light)" : (summaryTotals.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{summaryTotals.saving !== null ? <Money>{summaryTotals.saving > 0 ? "+" : ""}{fmtEUR(summaryTotals.saving)}</Money> : "—"}</div>
+                          {summaryTotals.savingRate !== null && <div style={{ fontSize: 11.5, color: "var(--color-border-light)", marginTop: 4 }}>{fmtPct(summaryTotals.savingRate)} delle entrate</div>}
+                        </div>
+                        <div style={{ width: 58, height: 58, borderRadius: "50%", background: `conic-gradient(var(--color-success) 0% ${ringPct}%, var(--color-border) ${ringPct}% 100%)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <div className="mono" style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--color-bg-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--color-heading)" }}>{Math.round(ringPct)}%</div>
+                        </div>
+                      </div>
+
+                      <button onClick={() => setDisplayStyle("list")} className="btn-outline-strong" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: "var(--radius-sm)", fontSize: 13.5 }}>
+                        <List size={14} /> Vedi elenco dei mesi
+                      </button>
+                    </div>
+                  );
+                })() : (
+                <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+                  <button onClick={() => setDisplayStyle("dashboard")} style={{ display: "flex", alignItems: "center", gap: 4, alignSelf: "flex-start", padding: "4px 0", marginBottom: 8, background: "none", border: "none", color: "var(--color-primary)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", flexShrink: 0 }}>
+                    <ChevronLeft size={14} /> Torna alla dashboard
+                  </button>
+                  <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8, paddingBottom: 4 }}>
+                    {summaryRows.map((r) => {
+                      const idx = summaryYear * 12 + r.monthIdx;
                       const openIdx = settings ? monthKeyToIdx(settings.monthKey) : -Infinity;
                       const disabled = activeAccountId === "all" || idx <= openIdx;
                       const isFuture = idx > todayIdx;
                       const rowOpacity = (activeAccountId !== "all" && idx <= openIdx) ? 0.3 : (isFuture ? 0.55 : 1);
                       return (
-                        <div key={r.key} onClick={() => !disabled && openRow(r.monthIdx)} className={disabled ? "" : "row-hover"} style={{ display: "flex", alignItems: "center", padding: "8px 4px", borderBottom: "1px dotted var(--color-bg-tint)", cursor: disabled ? "default" : "pointer" }}>
-                          <div style={{ width: 42, flexShrink: 0, fontSize: 12, color: "var(--color-primary)", textTransform: "capitalize", position: "sticky", left: 0, background: "#FFFFFF", zIndex: 1, opacity: rowOpacity }}>{MESI[r.monthIdx].slice(0, 3)}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-success)", opacity: rowOpacity }}>{r.hasEntry ? <Money>{fmtEUR(r.income)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-primary)", opacity: rowOpacity }}>{r.hasEntry ? <Money>{fmtEUR(r.investments)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-danger)", opacity: rowOpacity }}>{r.hasEntry ? <Money>{fmtEUR(r.expenses)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.netIncome === null ? "var(--color-border-light)" : (r.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)"), opacity: rowOpacity }}>{r.netIncome !== null ? <Money>{fmtEUR(r.netIncome)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)"), opacity: rowOpacity }}>{r.saving !== null ? <Money>{fmtEUR(r.saving)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 10.5, fontWeight: 600, color: r.savingRate === null ? "var(--color-border-light)" : (r.savingRate >= 0 ? "var(--color-success)" : "var(--color-danger)"), opacity: rowOpacity }}>{r.savingRate !== null ? fmtSavingRate(r.savingRate) : "—"}</div>
-                          <div className="mono" style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 12.5, fontWeight: 700, color: "var(--color-heading)", opacity: rowOpacity }}>
-                            {r.bankBalance !== null && r.bankBalance !== undefined ? <Money>{fmtEUR(r.bankBalance)}</Money> : <span style={{ color: "var(--color-border-light)", fontWeight: 400 }}>—</span>}
-                            {r.manualOverride && <Pencil size={9} color="var(--color-warning)" style={{ marginLeft: 3, verticalAlign: "middle" }} />}
+                        <div key={r.key} onClick={() => !disabled && openRow(r.monthIdx)} className="card-item" style={{ flexDirection: "column", alignItems: "stretch", cursor: disabled ? "default" : "pointer", opacity: rowOpacity, flexShrink: 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: r.hasEntry ? 8 : 0 }}>
+                            <span className="text-lg" style={{ textTransform: "capitalize" }}>{MESI[r.monthIdx]}</span>
+                            {r.hasEntry && (
+                              <div style={{ textAlign: "right" }}>
+                                <div style={{ fontSize: 10.5, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Risparmiato</div>
+                                <div className="mono" style={{ fontSize: 16, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>
+                                  {r.saving !== null ? <Money>{r.saving > 0 ? "+" : ""}{fmtEUR(r.saving)}</Money> : "—"}
+                                </div>
+                              </div>
+                            )}
                           </div>
+                          {r.hasEntry ? (
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Entrate</div>
+                                <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-success)" }}><Money>+{fmtEUR(r.income)}</Money></div>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Investito</div>
+                                <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-primary)" }}><Money>{fmtEUR(r.investments)}</Money></div>
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 11, color: "var(--color-border-light)", marginBottom: 2 }}>Uscite</div>
+                                <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-danger)" }}><Money>-{fmtEUR(r.expenses)}</Money></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12.5, color: "var(--color-border-light)" }}>Nessun dato per questo mese</div>
+                          )}
                         </div>
                       );
                     })}
+                  </div>
 
-                    <div style={{ display: "flex", alignItems: "center", padding: "10px 4px", marginTop: 6, background: "var(--color-bg-tint)", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)" }}>
-                      <div style={{ width: 42, flexShrink: 0, fontSize: 11.5, fontWeight: 700, color: "var(--color-heading)", position: "sticky", left: 0, background: "var(--color-bg-tint)", zIndex: 1 }}>Tot.</div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--color-success)" }}><Money>{fmtEUR(yearTotals.income)}</Money></div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--color-primary)" }}><Money>{fmtEUR(yearTotals.investments)}</Money></div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: "var(--color-danger)" }}><Money>{fmtEUR(yearTotals.expenses)}</Money></div>
-                      <div className="mono" style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: yearTotals.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)" }}><Money>{fmtEUR(yearTotals.netIncome)}</Money></div>
-                      <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 700, color: yearTotals.saving >= 0 ? "var(--color-success)" : "var(--color-danger)" }}><Money>{fmtEUR(yearTotals.saving)}</Money></div>
-                      <div className="mono" style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 10.5, fontWeight: 700, color: yearTotals.savingRate === null ? "var(--color-border-light)" : (yearTotals.savingRate >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{yearTotals.savingRate !== null ? fmtSavingRate(yearTotals.savingRate) : "—"}</div>
-                      <div className="mono" style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 13, fontWeight: 700, color: "var(--color-heading)" }}>{yearTotals.finalBalance !== null ? <Money>{fmtEUR(yearTotals.finalBalance)}</Money> : "—"}</div>
+                  <div className="card-item" style={{ marginTop: 8, flexDirection: "column", alignItems: "stretch", background: "var(--color-heading)", flexShrink: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                      <span className="text-lg" style={{ color: "#FFFFFF" }}>Totale {summaryPeriodLabel}</span>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 10.5, color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Risparmiato</div>
+                        <div className="mono" style={{ fontSize: 16, fontWeight: 600, color: summaryTotals.saving >= 0 ? "var(--color-success)" : "#FFB4A8" }}>
+                          <Money>{summaryTotals.saving > 0 ? "+" : ""}{fmtEUR(summaryTotals.saving)}</Money>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Entrate</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}><Money>+{fmtEUR(summaryTotals.income)}</Money></div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Investito</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}><Money>{fmtEUR(summaryTotals.investments)}</Money></div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Uscite</div>
+                        <div className="mono" style={{ fontSize: 13, fontWeight: 600, color: "#FFFFFF" }}><Money>-{fmtEUR(summaryTotals.expenses)}</Money></div>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div style={{ position: "absolute", top: 0, right: 0, bottom: 8, width: 20, background: "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.95))", pointerEvents: "none" }} />
-                </div>
+                )}
                   </>
                 ) : (
-                  <div style={{ position: "relative", flex: 1, minHeight: 0 }}>
-                <div className="scrollbar-thin" style={{ height: "100%", overflowY: "auto", overflowX: "auto" }}>
-                    <div style={{ width: 514 }}>
-                      <div style={{ display: "flex", alignItems: "center", padding: "0 4px 6px" }}>
-                        <div style={{ width: 42, flexShrink: 0, fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600, position: "sticky", left: 0, background: "#FFFFFF", zIndex: 2 }}>Anno</div>
-                        <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Entrate</div>
-                        <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Invest.</div>
-                        <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Spese</div>
-                        <div style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Net Inc.</div>
-                        <div style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saving</div>
-                        <div style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Sav. %</div>
-                        <div style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 9, letterSpacing: "0.03em", textTransform: "uppercase", color: "var(--color-border-light)", fontWeight: 600 }}>Saldo</div>
+                  <>
+                    {activeAccountId === "all" ? (
+                      <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--color-border-light)", padding: "2px 0 12px", borderBottom: "1px solid var(--color-border)", marginBottom: 10, flexShrink: 0 }}>
+                        Vista aggregata di tutti i conti — seleziona un conto per modificare i dati
                       </div>
+                    ) : openingInfo ? (
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, flexWrap: "wrap", fontSize: 12.5, color: openingInfo.missing ? "var(--color-warning)" : "var(--color-primary)", padding: "2px 0 12px", borderBottom: "1px solid var(--color-border)", marginBottom: 10, flexShrink: 0 }}>
+                        {openingInfo.missing && <AlertTriangle size={13} style={{ flexShrink: 0 }} />}
+                        {openingInfo.missing ? (
+                          <span>Saldo di <span style={{ textTransform: "capitalize" }}>{fmtMonthYear(openingInfo.key)}</span> non ancora disponibile</span>
+                        ) : (
+                          <span>Si parte da <span style={{ textTransform: "capitalize" }}>{fmtMonthYear(openingInfo.key)}</span>: <b className="mono" style={{ color: "var(--color-heading)" }}><Money>{fmtEUR(openingInfo.value)}</Money></b></span>
+                        )}
+                        {openingInfo.isOpening && (
+                          <button onClick={() => setConfirmEditOpening(true)} aria-label="Modifica saldo di apertura" style={{ background: "none", border: "none", color: "var(--color-primary)", cursor: "pointer", display: "flex", alignItems: "center", padding: 2 }}>
+                            <Pencil size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: "center", fontSize: 12.5, color: "var(--color-border-light)", padding: "2px 0 12px", borderBottom: "1px solid var(--color-border)", marginBottom: 10, flexShrink: 0 }}>
+                        Il tracciamento inizia da <span style={{ textTransform: "capitalize" }}>{fmtMonthYear(settings.monthKey)}</span>.
+                      </div>
+                    )}
 
-                      {annualRows.length === 0 ? (
-                        <div style={{ textAlign: "center", padding: "30px 10px", fontSize: 13.5, color: "var(--color-primary)" }}>Nessun dato disponibile.</div>
-                      ) : annualRows.map((r) => (
-                        <div key={r.year} onClick={() => { setYearCursor(r.year); setViewMode("monthly"); }} className="row-hover" style={{ display: "flex", alignItems: "center", padding: "10px 4px", borderBottom: "1px dotted var(--color-bg-tint)", cursor: "pointer" }}>
-                          <div className="text-xs" style={{ width: 42, flexShrink: 0, color: "var(--color-heading)", position: "sticky", left: 0, background: "#FFFFFF", zIndex: 1 }}>{r.year}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-success)" }}>{r.hasData ? <Money>{fmtEUR(r.income)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-primary)" }}>{r.hasData ? <Money>{fmtEUR(r.investments)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, color: "var(--color-danger)" }}>{r.hasData ? <Money>{fmtEUR(r.expenses)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 72, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.netIncome === null ? "var(--color-border-light)" : (r.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{r.netIncome !== null ? <Money>{fmtEUR(r.netIncome)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 66, flexShrink: 0, textAlign: "right", fontSize: 11, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{r.saving !== null ? <Money>{fmtEUR(r.saving)}</Money> : "—"}</div>
-                          <div className="mono" style={{ width: 60, flexShrink: 0, textAlign: "right", fontSize: 10.5, fontWeight: 600, color: r.savingRate === null ? "var(--color-border-light)" : (r.savingRate >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{r.savingRate !== null ? fmtSavingRate(r.savingRate) : "—"}</div>
-                          <div className="mono" style={{ width: 76, flexShrink: 0, textAlign: "right", fontSize: 13, fontWeight: 700, color: "var(--color-heading)" }}>
-                            {r.finalBalance !== null ? <Money>{fmtEUR(r.finalBalance)}</Money> : <span style={{ color: "var(--color-border-light)", fontWeight: 400 }}>—</span>}
+                    {(() => {
+                      const r = singleMonthRow;
+                      const p = prevMonthRow;
+                      const idx = monthCursor.year * 12 + monthCursor.month;
+                      const openIdx = settings ? monthKeyToIdx(settings.monthKey) : -Infinity;
+                      const editDisabled = activeAccountId === "all" || idx <= openIdx;
+                      if (!r.hasEntry) {
+                        return (
+                          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "20px 10px" }}>
+                            <BarChart3 size={34} color="var(--color-border-light)" style={{ marginBottom: 12 }} />
+                            <div style={{ fontSize: 14, color: "var(--color-primary)", marginBottom: 14 }}>{editDisabled ? "Nessun dato per questo mese." : "Nessun dato per questo mese."}</div>
+                            {!editDisabled && (
+                              <button onClick={() => openRow(r.monthIdx, monthCursor.year)} className="btn-primary" style={{ padding: "10px 18px", borderRadius: "var(--radius-sm)", fontSize: 14 }}>
+                                Inserisci i dati
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
+                      const incomeChange = pctChange(r.income, p.income);
+                      const expChange = pctChange(r.expenses, p.expenses);
+                      const investChange = pctChange(r.investments, p.investments);
+                      const ringPct = (r.savingRate !== null && r.savingRate > 0) ? Math.min(r.savingRate, 100) : 0;
+                      return (
+                        <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", paddingBottom: 4 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "4px 0 8px" }}>
+                            <div className="section-label" style={{ textAlign: "left", margin: 0 }}>I tuoi movimenti</div>
+                            {!editDisabled && (
+                              <button onClick={() => openRow(r.monthIdx, monthCursor.year)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-bg-tint)", color: "var(--color-primary)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                                <Pencil size={11} /> Modifica
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                            <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                <span className="text-sm" style={{ color: "var(--color-heading)" }}>Entrate</span>
+                                <div style={{ width: 22, height: 22, borderRadius: "var(--radius-pill)", background: "var(--color-success-bg, #E9FBF3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  {incomeChange !== null && incomeChange < 0 ? <TrendingDown size={12} color="var(--color-danger)" /> : <TrendingUp size={12} color="var(--color-success)" />}
+                                </div>
+                              </div>
+                              <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: "var(--color-success)", marginBottom: 4 }}><Money>{fmtEUR(r.income)}</Money></div>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                                <span style={{ color: "var(--color-border-light)" }}>vs mese prec.</span>
+                                <span className="mono" style={{ fontWeight: 600, color: incomeChange === null ? "var(--color-border-light)" : (incomeChange >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{incomeChange !== null ? fmtPct(incomeChange) : "—"}</span>
+                              </div>
+                            </div>
+
+                            <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                <span className="text-sm" style={{ color: "var(--color-heading)" }}>Investito</span>
+                                <div style={{ width: 22, height: 22, borderRadius: "var(--radius-pill)", background: "#EAF2F3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  {investChange !== null && investChange < 0 ? <TrendingDown size={12} color="var(--color-primary)" /> : <TrendingUp size={12} color="var(--color-primary)" />}
+                                </div>
+                              </div>
+                              <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: "var(--color-primary)", marginBottom: 4 }}><Money>{fmtEUR(r.investments)}</Money></div>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                                <span style={{ color: "var(--color-border-light)" }}>vs mese prec.</span>
+                                <span className="mono" style={{ fontWeight: 600, color: "var(--color-primary)" }}>{investChange !== null ? fmtPct(investChange) : "—"}</span>
+                              </div>
+                            </div>
+
+                            <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                <span className="text-sm" style={{ color: "var(--color-heading)" }}>Uscite</span>
+                                <div style={{ width: 22, height: 22, borderRadius: "var(--radius-pill)", background: "var(--color-danger-bg)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  {expChange !== null && expChange < 0 ? <TrendingDown size={12} color="var(--color-success)" /> : <TrendingUp size={12} color="var(--color-danger)" />}
+                                </div>
+                              </div>
+                              <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: "var(--color-danger)", marginBottom: 4 }}><Money>{fmtEUR(r.expenses)}</Money></div>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5 }}>
+                                <span style={{ color: "var(--color-border-light)" }}>vs mese prec.</span>
+                                <span className="mono" style={{ fontWeight: 600, color: expChange === null ? "var(--color-border-light)" : (expChange <= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{expChange !== null ? fmtPct(expChange) : "—"}</span>
+                              </div>
+                            </div>
+
+                            <div className="card-item" style={{ flexDirection: "column", alignItems: "stretch" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                <span className="text-sm" style={{ color: "var(--color-heading)" }}>Saldo netto</span>
+                              </div>
+                              <div className="mono" style={{ fontSize: 19, fontWeight: 600, color: r.netIncome === null ? "var(--color-border-light)" : (r.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)"), marginBottom: 4 }}>{r.netIncome !== null ? <Money>{fmtEUR(r.netIncome)}</Money> : "—"}</div>
+                              <div style={{ fontSize: 10.5, color: "var(--color-border-light)" }}>variazione conto</div>
+                            </div>
+                          </div>
+
+                          <div className="section-label" style={{ textAlign: "left", margin: "4px 0 8px" }}>Il risultato del mese</div>
+                          <div className="card-item" style={{ justifyContent: "space-between" }}>
+                            <div>
+                              <div style={{ fontSize: 11, fontWeight: 600, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Risparmiato</div>
+                              <div className="mono" style={{ fontSize: 24, fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{r.saving !== null ? <Money>{r.saving > 0 ? "+" : ""}{fmtEUR(r.saving)}</Money> : "—"}</div>
+                              {r.savingRate !== null && <div style={{ fontSize: 11.5, color: "var(--color-border-light)", marginTop: 4 }}>{fmtPct(r.savingRate)} delle entrate</div>}
+                            </div>
+                            <div style={{ width: 58, height: 58, borderRadius: "50%", background: `conic-gradient(var(--color-success) 0% ${ringPct}%, var(--color-border) ${ringPct}% 100%)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <div className="mono" style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--color-bg-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "var(--color-heading)" }}>{Math.round(ringPct)}%</div>
+                            </div>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                <div style={{ position: "absolute", top: 0, right: 0, bottom: 8, width: 20, background: "linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.95))", pointerEvents: "none" }} />
-                </div>
+                      );
+                    })()}
+                  </>
                 )}
               </>
             )}
