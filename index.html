@@ -2499,8 +2499,8 @@ function NetWorthApp({ session, onBack }) {
           <div onClick={toggle} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }} aria-expanded="false" className="dashboard-card-transition" style={cardStyle}>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 8, marginBottom: 9 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                <div style={{ width: 27, height: 27, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={14} color="var(--color-primary)" /></div>
-                <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+                <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color="var(--color-primary)" /></div>
+                <div style={{ fontSize: 16.5, fontWeight: 700, lineHeight: 1.15, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, minWidth: 0 }}>
                 <div className="mono" style={{ fontSize: 16.5, fontWeight: 700, whiteSpace: "nowrap" }}><Money>{fmtEUR(amount)}</Money></div>
@@ -2509,9 +2509,9 @@ function NetWorthApp({ session, onBack }) {
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 92px", gap: 6, alignItems: "center" }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 9.5, color: "var(--color-border-light)", marginBottom: 2 }}>Rendimento</div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--color-primary)", marginBottom: 2 }}>Rendimento</div>
                 <div className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: gainColor, whiteSpace: "nowrap", marginBottom: 4 }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money></div>
-                <div style={{ fontSize: 9.5, color: "var(--color-border-light)", marginBottom: 2 }}>Rendimento %</div>
+                <div style={{ fontSize: 12.5, fontWeight: 600, color: "var(--color-primary)", marginBottom: 2 }}>Rendimento %</div>
                 <div className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: gainColor, whiteSpace: "nowrap" }}>{data.gainPct !== null ? fmtPct(data.gainPct) : "—"}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", minWidth: 0 }}>
@@ -2525,22 +2525,30 @@ function NetWorthApp({ session, onBack }) {
         <div onClick={toggle} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }} aria-expanded="true" className="dashboard-card-transition" style={cardStyle}>
           <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
             <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color="var(--color-primary)" /></div>
-            <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
+            <div style={{ fontSize: 16.5, fontWeight: 700, lineHeight: 1.15, flex: 1, minWidth: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{title}</div>
             <div className="mono" style={{ fontSize: 16.5, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0 }}><Money>{fmtEUR(amount)}</Money></div>
             <ChevronDown size={15} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(180deg)", transition: "transform 180ms ease" }} />
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, fontSize: 9.5 }}>
-            <span style={{ color: "var(--color-border-light)" }}>Rendimento complessivo</span>
-            <span className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: gainColor }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</span>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "end" }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 9.5, fontWeight: 500, color: "var(--color-border-light)", marginBottom: 3 }}>Peso sul patrimonio</div>
-              <div className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-primary)", marginBottom: 10 }}>{weightPct.toFixed(1)}%</div>
-              <div style={{ fontSize: 9.5, fontWeight: 500, color: "var(--color-border-light)", marginBottom: 3 }}>Contributo nel periodo</div>
-              <div className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-primary)" }}><Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money></div>
+          <div style={{ display: "grid", minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, padding: "8px 0 10px" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-primary)" }}>Rendimento complessivo</span>
+              <span className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: gainColor, textAlign: "right", whiteSpace: "nowrap" }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</span>
             </div>
-            <Sparkline values={data.sparklineValues} color={gainColor} width={148} height={64} endLabel={data.periodReturnDelta !== null ? fmtPp(data.periodReturnDelta) : null} endLabelColor={periodColor} />
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 148px", gap: 12, alignItems: "stretch", borderTop: "1px dotted var(--color-border)" }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, padding: "10px 0" }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-primary)" }}>Peso sul patrimonio</span>
+                  <span className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}>{weightPct.toFixed(1)}%</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, padding: "10px 0", borderTop: "1px dotted var(--color-border)" }}>
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-primary)" }}>Contributo nel periodo</span>
+                  <span className="mono" style={{ fontSize: 12.5, fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}><Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money></span>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", minWidth: 0 }}>
+                <Sparkline values={data.sparklineValues} color={gainColor} width={148} height={64} endLabel={data.periodReturnDelta !== null ? fmtPp(data.periodReturnDelta) : null} endLabelColor={periodColor} />
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -2549,24 +2557,32 @@ function NetWorthApp({ session, onBack }) {
       <div style={{ padding: hero ? "16px" : "14px", borderRadius: "var(--radius-xl)", background: hero ? "linear-gradient(145deg, var(--color-heading), var(--color-primary))" : "var(--color-bg-tint)", color: hero ? "#FFFFFF" : "var(--color-heading)", boxShadow: hero ? "0 8px 20px rgba(5,91,101,0.14)" : "none" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: hero ? 10 : 8 }}>
           <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: hero ? "rgba(255,255,255,0.14)" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color={hero ? "#FFFFFF" : "var(--color-primary)"} /></div>
-          <div style={{ fontSize: hero ? 13 : 13.5, fontWeight: 700, textTransform: hero ? "uppercase" : "none", letterSpacing: hero ? "0.055em" : "normal", opacity: hero ? 0.78 : 1, flex: 1, minWidth: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{title}</div>
+          <div style={{ fontSize: hero ? 16.5 : 20, fontWeight: 700, textTransform: "none", letterSpacing: "normal", opacity: 1, flex: 1, minWidth: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{title}</div>
           <div className="mono" style={{ fontSize: hero ? 24 : 20, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0, marginLeft: 8 }}><Money>{fmtEUR(amount)}</Money></div>
         </div>
         {!hero && <div className="mono" style={{ fontSize: 11, color: "var(--color-primary)", marginBottom: 12 }}>{weightPct.toFixed(1)}% del patrimonio</div>}
-        {hero && (
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, fontSize: 11 }}>
-            <span style={{ opacity: 0.78, fontWeight: 500 }}>Rendimento complessivo</span>
-            <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: data.gain >= 0 ? "#66F0B5" : "#FFD0C8" }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</span>
+        <div style={{ display: "grid", minWidth: 0 }}>
+          {hero && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, padding: "8px 0 10px", borderTop: "1px dotted rgba(255,255,255,0.24)" }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>Rendimento complessivo</span>
+              <span className="mono" style={{ fontSize: 13, fontWeight: 700, color: data.gain >= 0 ? "#66F0B5" : "#FFD0C8", whiteSpace: "nowrap" }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</span>
+            </div>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 148px", gap: 12, alignItems: "stretch", borderTop: hero ? "1px dotted rgba(255,255,255,0.24)" : "none" }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, padding: "10px 0" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: hero ? "rgba(255,255,255,0.82)" : "var(--color-primary)" }}>{hero ? "Variazione patrimonio" : "Rendimento complessivo"}</span>
+                <span className="mono" style={{ fontSize: 13.5, fontWeight: 700, color: hero ? (netWorthPeriodDelta >= 0 ? "#66F0B5" : "#FFD0C8") : gainColor, textAlign: "right", whiteSpace: "nowrap" }}>{hero ? <><Money>{netWorthPeriodDelta > 0 ? "+" : ""}{fmtEUR(netWorthPeriodDelta)}</Money>{netWorthPeriodDeltaPct !== null ? ` · ${fmtPct(netWorthPeriodDeltaPct)}` : ""}</> : <><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</>}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, padding: "10px 0", borderTop: hero ? "1px dotted rgba(255,255,255,0.24)" : "1px dotted var(--color-border)" }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: hero ? "rgba(255,255,255,0.82)" : "var(--color-primary)" }}>Contributo nel periodo</span>
+                <span className="mono" style={{ fontSize: 13.5, fontWeight: 700, color: hero ? "#FFFFFF" : "var(--color-primary)", whiteSpace: "nowrap" }}><Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money></span>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", minWidth: 0 }}>
+              <Sparkline values={data.sparklineValues} color={gainColor} width={148} height={64} endLabel={data.periodReturnDelta !== null ? fmtPp(data.periodReturnDelta) : null} endLabelColor={periodColor} style={{ filter: hero ? "brightness(1.35)" : "none" }} />
+            </div>
           </div>
-        )}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 12, alignItems: "end" }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 11, fontWeight: 500, color: hero ? "rgba(255,255,255,0.72)" : "var(--color-border-light)", marginBottom: 3 }}>{hero ? "Variazione patrimonio" : "Rendimento complessivo"}</div>
-            <div className="mono" style={{ fontSize: 13.5, fontWeight: 700, color: hero ? (netWorthPeriodDelta >= 0 ? "#66F0B5" : "#FFD0C8") : gainColor, marginBottom: 10 }}>{hero ? <><Money>{netWorthPeriodDelta > 0 ? "+" : ""}{fmtEUR(netWorthPeriodDelta)}</Money>{netWorthPeriodDeltaPct !== null ? ` · ${fmtPct(netWorthPeriodDeltaPct)}` : ""}</> : <><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</>}</div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: hero ? "rgba(255,255,255,0.72)" : "var(--color-border-light)", marginBottom: 3 }}>Contributo nel periodo</div>
-            <div className="mono" style={{ fontSize: 13.5, fontWeight: 700, color: hero ? "#FFFFFF" : "var(--color-primary)" }}><Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money></div>
-          </div>
-          <Sparkline values={data.sparklineValues} color={gainColor} width={148} height={64} endLabel={data.periodReturnDelta !== null ? fmtPp(data.periodReturnDelta) : null} endLabelColor={periodColor} style={{ filter: hero ? "brightness(1.35)" : "none" }} />
         </div>
       </div>
     );
@@ -2686,7 +2702,7 @@ function NetWorthApp({ session, onBack }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <DashboardFinancialCard title="Investimenti" icon={TrendingUp} amount={investTotal} weightPct={grandTotal !== 0 ? (investTotal / grandTotal) * 100 : 0} data={investDashboard} compact />
                 <DashboardFinancialCard title="Assicurazioni e Previdenza" icon={Shield} amount={insuranceTotal} weightPct={grandTotal !== 0 ? (insuranceTotal / grandTotal) * 100 : 0} data={insuranceDashboard} compact />
-                <div style={{ padding: 12, borderRadius: "var(--radius-xl)", background: "var(--color-bg-tint)", minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}><div style={{ width: 27, height: 27, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center" }}><Home size={14} color="var(--color-primary)" /></div><span style={{ fontSize: 12, fontWeight: 700 }}>Immobili</span></div><div className="mono" style={{ fontSize: 16.5, fontWeight: 700 }}><Money>{fmtEUR(realEstateTotal)}</Money></div><div className="mono" style={{ fontSize: 10, color: "var(--color-primary)", marginTop: 5 }}>{realEstateWeight.toFixed(1)}% del patrimonio</div><div style={{ marginTop: 12, fontSize: 9.5, lineHeight: 1.4, color: "var(--color-border-light)" }}>Approfondimento dedicato previsto in una fase successiva.</div></div>
+                <div style={{ padding: 12, borderRadius: "var(--radius-xl)", background: "var(--color-bg-tint)", minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}><div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Home size={17} color="var(--color-primary)" /></div><span style={{ fontSize: 16.5, fontWeight: 700, lineHeight: 1.15 }}>Immobili</span></div><div className="mono" style={{ fontSize: 16.5, fontWeight: 700 }}><Money>{fmtEUR(realEstateTotal)}</Money></div><div className="mono" style={{ fontSize: 10, color: "var(--color-primary)", marginTop: 5 }}>{realEstateWeight.toFixed(1)}% del patrimonio</div><div style={{ marginTop: 12, fontSize: 9.5, lineHeight: 1.4, color: "var(--color-border-light)" }}>Approfondimento dedicato previsto in una fase successiva.</div></div>
                 <div
                   onClick={() => setLiquidityExpanded((v) => !v)}
                   role="button"
@@ -2709,8 +2725,8 @@ function NetWorthApp({ session, onBack }) {
                     <>
                       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 8, marginBottom: 12 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                          <div style={{ width: 27, height: 27, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Banknote size={14} color="var(--color-primary)" /></div>
-                          <div style={{ fontSize: 12, fontWeight: 700 }}>Liquidità</div>
+                          <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Banknote size={17} color="var(--color-primary)" /></div>
+                          <div style={{ fontSize: 16.5, fontWeight: 700, lineHeight: 1.15 }}>Liquidità</div>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                           <div className="mono" style={{ fontSize: 16.5, fontWeight: 700, whiteSpace: "nowrap" }}><Money>{fmtEUR(cashflowTotal)}</Money></div>
@@ -2732,7 +2748,7 @@ function NetWorthApp({ session, onBack }) {
                     <>
                       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
                         <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Banknote size={17} color="var(--color-primary)" /></div>
-                        <div style={{ fontSize: 12, fontWeight: 700, lineHeight: 1.2, flex: 1 }}>Liquidità</div>
+                        <div style={{ fontSize: 16.5, fontWeight: 700, lineHeight: 1.15, flex: 1 }}>Liquidità</div>
                         <div className="mono" style={{ fontSize: 16.5, fontWeight: 700, whiteSpace: "nowrap" }}><Money>{fmtEUR(cashflowTotal)}</Money></div>
                         <ChevronDown size={15} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(180deg)", transition: "transform 180ms ease" }} />
                       </div>
