@@ -1,0 +1,24 @@
+{
+  "name": "Cozy Tracker",
+  "short_name": "Cozy",
+  "description": "Cozy Tracker, il tuo spazio personale per patrimonio, investimenti e flussi di cassa.",
+  "start_url": "./index_v55_test.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#055B65",
+  "theme_color": "#055B65",
+  "icons": [
+    {
+      "src": "cozy-tracker-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "cozy-tracker-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
