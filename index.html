@@ -702,6 +702,40 @@ html[data-theme="dark"] [style*='background: #FFFFFF'] { background:var(--color-
 html[data-theme="dark"] [style*='color: rgb(31, 41, 51)'] { color:var(--color-text) !important; }
 html[data-theme="dark"] [style*='color: rgb(107, 114, 128)'] { color:var(--color-text-secondary) !important; }
 html[data-theme="dark"] button:disabled { color:var(--color-text-secondary); }
+/* V68 TEST - rifiniture dark semplici */
+html[data-theme="dark"] .btn-primary {
+  background:#2E7D69 !important;
+  color:#F5F6F7 !important;
+  border:1px solid #4CAF88 !important;
+  box-shadow:0 5px 14px rgba(0,0,0,.24);
+}
+html[data-theme="dark"] .btn-primary:hover { background:#367D6A !important; }
+html[data-theme="dark"] .btn-primary:disabled {
+  background:#26302D !important;
+  color:#7F8A86 !important;
+  border-color:#394440 !important;
+  box-shadow:none;
+}
+html[data-theme="dark"] .hub-item-icon-investments {
+  background:#1F3F36 !important;
+  border:1px solid rgba(76,175,136,.42);
+}
+html[data-theme="dark"] .hub-item-icon-investments svg {
+  color:#4CAF88 !important;
+  stroke:#4CAF88 !important;
+}
+html[data-theme="dark"] .nw-hero-card {
+  background:linear-gradient(145deg,#173A32 0%,#245D4F 100%) !important;
+  color:#F5F6F7 !important;
+  border:1px solid rgba(76,175,136,.42);
+  box-shadow:0 12px 30px rgba(0,0,0,.34) !important;
+}
+html[data-theme="dark"] .nw-hero-icon {
+  background:rgba(15,20,19,.34) !important;
+  border:1px solid rgba(245,246,247,.18);
+}
+html[data-theme="dark"] .nw-hero-card .nw-card-number,
+html[data-theme="dark"] .nw-hero-card svg { color:#F5F6F7 !important; }
 @keyframes cozyHeartPop { 0%{transform:scale(.65);opacity:.25} 55%{transform:scale(1.23);opacity:1} 100%{transform:scale(1);opacity:1} }
 .cozy-profile-card { border:1px solid var(--color-border); border-radius:22px; background:linear-gradient(145deg,var(--color-surface),var(--color-bg-tint)); padding:18px; margin-bottom:12px; box-shadow:0 10px 28px rgba(5,91,101,.07); }
 .cozy-avatar { width:78px;height:78px;border-radius:50%;background-image:var(--avatar-image);background-size:contain;background-position:center;background-repeat:no-repeat;box-shadow:0 8px 22px rgba(5,91,101,.16),0 0 0 4px #fff,0 0 0 6px var(--color-primary);flex-shrink:0; }
@@ -743,7 +777,7 @@ import {
 } from "https://esm.sh/lucide-react@0.383.0?deps=react@18";
 
 // ==== Configurazione Supabase ====
-// V63 TEST: tema scuro completo secondo palette approvata.
+// V68 TEST: rifiniture dark e rimozione cuore Profilo.
 const SUPABASE_URL = "https://fynjxnnxaremjazohhck.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_tOb1ZKZ0sg4ozI3I80nVkQ_NGAIMZcr";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1515,7 +1549,7 @@ function Hub({ session, onSelect, activeGroup, onToggleGroup }) {
             return (
               <React.Fragment key={item.key}>
                 <button onClick={() => handleClick(item)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "var(--space-sm)", padding: "10px 14px", borderRadius: "var(--radius-xl)", border: isExpanded ? `1px solid ${item.accent}` : "none", background: "var(--color-bg-tint)", boxShadow: "0 1px 3px rgba(5,91,101,0.05)", cursor: "pointer", textAlign: "left", flexShrink: 0 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: item.accentBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <div className={`hub-item-icon hub-item-icon-${item.key}`} style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: item.accentBg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <Icon size={20} color={item.accent} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0, fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-heading)" }}>{item.title}</div>
@@ -1646,6 +1680,7 @@ function MainApp({ session, onBack }) {
   const [editError, setEditError] = useState("");
   const [editDeleteConfirm, setEditDeleteConfirm] = useState(false);
   const [cfEntries, setCfEntries] = useState([]);
+  const [cfTransfers, setCfTransfers] = useState([]);
   const [showUntrackedInfo, setShowUntrackedInfo] = useState(false);
 
   const CATEGORIES = useMemo(() => [...categories.map((c) => ({ id: c.label, label: c.label, icon: ICON_MAP[c.icon_key] || (SUGGESTED_MAP[c.label] && SUGGESTED_MAP[c.label].icon) || Tag, archived: c.archived })), ALTRO_CATEGORY], [categories]);
@@ -2770,12 +2805,25 @@ function sumLatestValuationWithCostAsOf(items, valuations, itemIdField, cutoffFu
   return { marketValue, costBasis };
 }
 
-function cashflowBalanceAtMonth(settings, entriesMap, monthKey) {
+function buildTransferNetByAccount(transfers) {
+  const result = {};
+  (transfers || []).forEach((t) => {
+    const key = fullDateToMonth(t.transfer_date);
+    const amount = Number(t.amount) || 0;
+    if (!result[t.from_account_id]) result[t.from_account_id] = {};
+    if (!result[t.to_account_id]) result[t.to_account_id] = {};
+    result[t.from_account_id][key] = (result[t.from_account_id][key] || 0) - amount;
+    result[t.to_account_id][key] = (result[t.to_account_id][key] || 0) + amount;
+  });
+  return result;
+}
+
+function cashflowBalanceAtMonth(settings, entriesMap, monthKey, transferNetMap = {}) {
   if (!settings) return 0;
   if (monthKey === settings.monthKey) return settings.balance;
   if (monthKeyToIdx(monthKey) <= monthKeyToIdx(settings.monthKey)) return 0;
   const yearForChain = Number(monthKey.split("-")[0]);
-  const chain = buildCashflowChain(settings, entriesMap, yearForChain);
+  const chain = buildCashflowChain(settings, entriesMap, yearForChain, transferNetMap);
   const r = chain[monthKey];
   return r && r.bankBalance !== null && r.bankBalance !== undefined ? r.bankBalance : 0;
 }
@@ -2816,7 +2864,6 @@ function ProfileApp({ session, onBack, themePreference, onThemePreferenceChange 
   const [theme, setTheme] = useState(() => normalizeThemePreference(themePreference));
   const [themeSaveState, setThemeSaveState] = useState("idle");
   const [themeSaveMessage, setThemeSaveMessage] = useState("");
-  const [favourite, setFavourite] = useState(() => localStorage.getItem("cozyFavourite") === "1");
   const avatarStyle = (idx) => ({ "--avatar-image": `url("${COZY_AVATARS[idx] || COZY_AVATARS[0]}")` });
 
   useEffect(() => {
@@ -2903,7 +2950,6 @@ function ProfileApp({ session, onBack, themePreference, onThemePreferenceChange 
     try { localStorage.removeItem("cozyTheme"); } catch (e) {}
     window.setTimeout(() => setThemeSaveMessage(""), 1800);
   };
-  const toggleFavourite = () => { const next = !favourite; setFavourite(next); localStorage.setItem("cozyFavourite", next ? "1" : "0"); };
   const [fullName, setFullName] = useState(session.user.user_metadata?.full_name || "");
   const [nameInput, setNameInput] = useState(fullName);
   const [nameError, setNameError] = useState("");
@@ -3005,7 +3051,6 @@ function ProfileApp({ session, onBack, themePreference, onThemePreferenceChange 
                   <div style={{fontSize: "calc(22px + var(--mobile-font-boost))",fontWeight:800,color:"var(--color-heading)",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fullName || "Cozy Explorer"}</div>
                   <div style={{fontSize: "calc(12.5px + var(--mobile-font-boost))",color:"var(--color-primary)",marginTop:3}}>Avatar sincronizzato tra i tuoi dispositivi.</div>
                 </div>
-                <button onClick={toggleFavourite} aria-label="Profilo preferito" style={{border:0,background:"transparent",fontSize: "calc(25px + var(--mobile-font-boost))",cursor:"pointer",color:favourite?"#E86B7A":"var(--color-border-light)",animation:favourite?"cozyHeartPop .32s ease":"none"}}>♥</button>
               </div>
             </div>
 
@@ -3158,6 +3203,7 @@ function NetWorthApp({ session, onBack }) {
   const [cfAccounts, setCfAccounts] = useState([]);
   const [cfSettings, setCfSettings] = useState([]);
   const [cfEntries, setCfEntries] = useState([]);
+  const [cfTransfers, setCfTransfers] = useState([]);
 
   const [cursor] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
   const [dashboardPeriod, setDashboardPeriod] = useState("ytd");
@@ -3169,7 +3215,7 @@ function NetWorthApp({ session, onBack }) {
     (async () => {
       setLoadError("");
       try {
-        const [ih, iv, ip, ipv, rp, rpv, ca, cs, ce] = await Promise.all([
+        const [ih, iv, ip, ipv, rp, rpv, ca, cs, ce, ct] = await Promise.all([
         supabase.from("investment_holdings").select("id").eq("user_id", userId),
         supabase.from("investment_valuations").select("holding_id,value_date,market_value,cost_basis").eq("user_id", userId),
         supabase.from("insurance_policies").select("id").eq("user_id", userId),
@@ -3179,6 +3225,7 @@ function NetWorthApp({ session, onBack }) {
         supabase.from("cashflow_accounts").select("id").eq("user_id", userId),
         supabase.from("cashflow_settings").select("*").eq("user_id", userId),
         supabase.from("cashflow_entries").select("*").eq("user_id", userId),
+        supabase.from("cashflow_transfers").select("*").eq("user_id", userId),
       ]);
       setInvestHoldings(ih.data || []);
       setInvestValuations(iv.data || []);
@@ -3189,6 +3236,7 @@ function NetWorthApp({ session, onBack }) {
       setCfAccounts(ca.data || []);
       setCfSettings((cs.data || []).map((s) => ({ id: s.id, account_id: s.account_id, balance: Number(s.opening_balance), monthKey: fullDateToMonth(s.opening_date) })));
       setCfEntries((ce.data || []).map((e) => ({ ...e, income: Number(e.income), investments: Number(e.investments), expenses: Number(e.expenses), bank_balance: e.bank_balance === null ? null : Number(e.bank_balance) })));
+      setCfTransfers((ct.data || []).map((t) => ({ ...t, amount: Number(t.amount) })));
         if (active) setLoaded(true);
       } catch (err) {
         console.error("Errore caricamento Patrimonio", err);
@@ -3220,14 +3268,16 @@ function NetWorthApp({ session, onBack }) {
     return m;
   }, [cfEntries]);
 
+  const cfTransferNetByAccount = useMemo(() => buildTransferNetByAccount(cfTransfers), [cfTransfers]);
+
   const cashflowTotal = useMemo(() => {
     let total = 0;
     cfAccounts.forEach((acc) => {
       const s = cfSettingsByAccount[acc.id];
-      total += cashflowBalanceAtMonth(s, cfEntriesByAccount[acc.id] || {}, cursorMonthKey);
+      total += cashflowBalanceAtMonth(s, cfEntriesByAccount[acc.id] || {}, cursorMonthKey, cfTransferNetByAccount[acc.id] || {});
     });
     return total;
-  }, [cfAccounts, cfSettingsByAccount, cfEntriesByAccount, cursorMonthKey]);
+  }, [cfAccounts, cfSettingsByAccount, cfEntriesByAccount, cfTransferNetByAccount, cursorMonthKey]);
 
   const grandTotal = investTotal + insuranceTotal + realEstateTotal + cashflowTotal;
 
@@ -3240,7 +3290,7 @@ function NetWorthApp({ session, onBack }) {
     let cashflow = 0;
     cfAccounts.forEach((acc) => {
       const s = cfSettingsByAccount[acc.id];
-      cashflow += cashflowBalanceAtMonth(s, cfEntriesByAccount[acc.id] || {}, mk);
+      cashflow += cashflowBalanceAtMonth(s, cfEntriesByAccount[acc.id] || {}, mk, cfTransferNetByAccount[acc.id] || {});
     });
     return { invest, insurance, realestate, cashflow: { marketValue: cashflow, costBasis: cashflow } };
   };
@@ -3429,9 +3479,9 @@ function NetWorthApp({ session, onBack }) {
       );
     }
     return (
-      <div style={{ padding: hero ? "16px" : "14px", borderRadius: "var(--radius-xl)", background: hero ? "linear-gradient(145deg, var(--color-heading), var(--color-primary))" : "var(--color-bg-tint)", color: hero ? "#FFFFFF" : "var(--color-heading)", boxShadow: hero ? "0 8px 20px rgba(5,91,101,0.14)" : "none" }}>
+      <div className={hero ? "nw-hero-card" : "nw-financial-card"} style={{ padding: hero ? "16px" : "14px", borderRadius: "var(--radius-xl)", background: hero ? "linear-gradient(145deg, var(--color-heading), var(--color-primary))" : "var(--color-bg-tint)", color: hero ? "#FFFFFF" : "var(--color-heading)", boxShadow: hero ? "0 8px 20px rgba(5,91,101,0.14)" : "none" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: hero ? 10 : 8 }}>
-          <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: hero ? "rgba(255,255,255,0.14)" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color={hero ? "#FFFFFF" : "var(--color-primary)"} /></div>
+          <div className={hero ? "nw-hero-icon" : "nw-card-icon"} style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: hero ? "rgba(255,255,255,0.14)" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color={hero ? "#FFFFFF" : "var(--color-primary)"} /></div>
           <div style={{ fontSize: hero ? 16.5 : 20, fontWeight: 700, textTransform: "none", letterSpacing: "normal", opacity: 1, flex: 1, minWidth: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{title}</div>
           <div className="mono nw-card-number" style={{ fontSize: `calc(${hero ? 24 : 20}px + var(--mobile-font-boost))`, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0, marginLeft: 8 }}><Money>{fmtEUR(amount)}</Money></div>
         </div>
@@ -5451,10 +5501,10 @@ function RealEstateApp({ session, onBack }) {
 }
 
 
-function buildCashflowChain(settings, entriesMap, yearCursor) {
+function buildCashflowChain(settings, entriesMap, yearCursor, transferNetMap = {}) {
   const result = {};
   if (!settings) return result;
-  const keys = Object.keys(entriesMap);
+  const keys = [...new Set([...Object.keys(entriesMap), ...Object.keys(transferNetMap)])];
   const openIdx = monthKeyToIdx(settings.monthKey);
   const todayIdx = (() => { const d = new Date(); return d.getFullYear() * 12 + d.getMonth(); })();
   const lastEntryIdx = keys.length ? Math.max(...keys.map(monthKeyToIdx)) : openIdx;
@@ -5463,20 +5513,24 @@ function buildCashflowChain(settings, entriesMap, yearCursor) {
   for (let i = openIdx + 1; i <= endIdx; i++) {
     const k = monthKeyFromIdx(i);
     const entry = entriesMap[k];
-    if (!entry) {
-      result[k] = { hasEntry: false, bankBalance: null };
+    const transferNet = Number(transferNetMap[k] || 0);
+    if (!entry && transferNet === 0) {
+      result[k] = { hasEntry: false, transferNet: 0, bankBalance: null };
       prevBalance = null;
       continue;
     }
+    const income = entry ? entry.income : 0;
+    const investments = entry ? entry.investments : 0;
+    const expenses = entry ? entry.expenses : 0;
     let bankBalance;
-    if (entry.manual_override && entry.bank_balance !== null) {
+    if (entry && entry.manual_override && entry.bank_balance !== null) {
       bankBalance = entry.bank_balance;
     } else if (prevBalance !== null) {
-      bankBalance = prevBalance + entry.income - entry.investments - entry.expenses;
+      bankBalance = prevBalance + income - investments - expenses + transferNet;
     } else {
       bankBalance = null;
     }
-    result[k] = { hasEntry: true, income: entry.income, investments: entry.investments, expenses: entry.expenses, manualOverride: !!entry.manual_override, bankBalance };
+    result[k] = { hasEntry: true, income, investments, expenses, transferNet, manualOverride: !!(entry && entry.manual_override), bankBalance };
     prevBalance = bankBalance;
   }
   return result;
@@ -5494,6 +5548,13 @@ function CashflowApp({ session, onBack }) {
   const [accounts, setAccounts] = useState([]);
   const [settingsRows, setSettingsRows] = useState([]);
   const [entries, setEntries] = useState([]);
+  const [transfers, setTransfers] = useState([]);
+  const [transferModalOpen, setTransferModalOpen] = useState(false);
+  const [transferForm, setTransferForm] = useState({ from_account_id: "", to_account_id: "", transfer_date: currentMonthISO() + "-01", amount: "", note: "" });
+  const [transferError, setTransferError] = useState("");
+  const [transferBusy, setTransferBusy] = useState(false);
+  const [editingTransferId, setEditingTransferId] = useState(null);
+  const [removalTransfer, setRemovalTransfer] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [saveState, setSaveState] = useState("idle");
   const [lastErrorMsg, setLastErrorMsg] = useState("");
@@ -5549,9 +5610,11 @@ function CashflowApp({ session, onBack }) {
       const { data: accs, error: accErr } = await supabase.from("cashflow_accounts").select("*").eq("user_id", userId).order("created_at", { ascending: true });
       const { data: st, error: stErr } = await supabase.from("cashflow_settings").select("*").eq("user_id", userId);
       const { data: en, error: enErr } = await supabase.from("cashflow_entries").select("*").eq("user_id", userId).order("value_date", { ascending: true });
+      const { data: tr, error: trErr } = await supabase.from("cashflow_transfers").select("*").eq("user_id", userId).order("transfer_date", { ascending: false });
       setAccounts(!accErr && accs ? accs : []);
       setSettingsRows(!stErr && st ? st.map((s) => ({ id: s.id, account_id: s.account_id, balance: Number(s.opening_balance), monthKey: fullDateToMonth(s.opening_date) })) : []);
       setEntries(!enErr && en ? en.map((e) => ({ ...e, income: Number(e.income), investments: Number(e.investments), expenses: Number(e.expenses), bank_balance: e.bank_balance === null ? null : Number(e.bank_balance) })) : []);
+      setTransfers(!trErr && tr ? tr.map((t) => ({ ...t, amount: Number(t.amount) })) : []);
       setLoaded(true);
     })();
   }, []);
@@ -5571,14 +5634,16 @@ function CashflowApp({ session, onBack }) {
     return m;
   }, [entries]);
 
+  const transferNetByAccount = useMemo(() => buildTransferNetByAccount(transfers), [transfers]);
+
   const chainsByAccount = useMemo(() => {
     const m = {};
     accounts.forEach((acc) => {
       const settings = settingsByAccount[acc.id];
-      if (settings) m[acc.id] = buildCashflowChain(settings, entriesByAccount[acc.id] || {}, yearCursor);
+      if (settings) m[acc.id] = buildCashflowChain(settings, entriesByAccount[acc.id] || {}, yearCursor, transferNetByAccount[acc.id] || {});
     });
     return m;
-  }, [accounts, settingsByAccount, entriesByAccount, yearCursor]);
+  }, [accounts, settingsByAccount, entriesByAccount, transferNetByAccount, yearCursor]);
 
   const settings = activeAccountId !== "all" ? settingsByAccount[activeAccountId] : null;
   const entriesMap = activeAccountId !== "all" ? (entriesByAccount[activeAccountId] || {}) : {};
@@ -5594,6 +5659,9 @@ function CashflowApp({ session, onBack }) {
     return chain[prevKey] ? (chain[prevKey].bankBalance ?? null) : null;
   };
 
+  const transfersForMonth = (monthKey) => transfers.filter((t) => fullDateToMonth(t.transfer_date) === monthKey && (activeAccountId === "all" || t.from_account_id === activeAccountId || t.to_account_id === activeAccountId));
+  const transferredVolumeForMonth = (monthKey) => transfers.filter((t) => fullDateToMonth(t.transfer_date) === monthKey).reduce((sum,t) => sum + Number(t.amount || 0), 0);
+
   const computeMonthRow = (year, month) => {
     const key = `${year}-${String(month + 1).padStart(2, "0")}`;
     if (activeAccountId === "all") {
@@ -5607,10 +5675,13 @@ function CashflowApp({ session, onBack }) {
           bankBalance += (r.bankBalance ?? 0);
         }
       });
-      return { key, monthIdx: month, hasEntry, income, investments, expenses, bankBalance: hasEntry ? bankBalance : null, manualOverride: false, ...(hasEntry ? cashflowDerived(income, investments, expenses) : { netIncome: null, saving: null, savingRate: null }) };
+      const transferVolume = transferredVolumeForMonth(key);
+      if (transferVolume > 0) hasEntry = true;
+      return { key, monthIdx: month, hasEntry, income, investments, expenses, transferNet: 0, transferVolume, transferCount: transfersForMonth(key).length, bankBalance: hasEntry ? bankBalance : null, manualOverride: false, ...(hasEntry ? cashflowDerived(income, investments, expenses) : { netIncome: null, saving: null, savingRate: null }) };
     } else {
       const base = { key, monthIdx: month, hasEntry: false, bankBalance: null, ...(chain[key] || {}) };
-      return { ...base, ...(base.hasEntry ? cashflowDerived(base.income, base.investments, base.expenses) : { netIncome: null, saving: null, savingRate: null }) };
+      const monthTransfers = transfersForMonth(key);
+      return { ...base, transferCount:monthTransfers.length, transferVolume:monthTransfers.reduce((sum,t)=>sum+Number(t.amount||0),0), ...(base.hasEntry ? cashflowDerived(base.income, base.investments, base.expenses) : { netIncome: null, saving: null, savingRate: null }) };
     }
   };
 
@@ -5618,14 +5689,14 @@ function CashflowApp({ session, onBack }) {
     const rows = [];
     for (let m = 0; m < 12; m++) rows.push(computeMonthRow(yearCursor, m));
     return rows;
-  }, [activeAccountId, chain, chainsByAccount, accounts, yearCursor]);
+  }, [activeAccountId, chain, chainsByAccount, accounts, transfers, yearCursor]);
 
-  const singleMonthRow = useMemo(() => computeMonthRow(monthCursor.year, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
+  const singleMonthRow = useMemo(() => computeMonthRow(monthCursor.year, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, transfers, monthCursor]);
 
   const prevMonthRow = useMemo(() => {
     const idx = monthCursor.year * 12 + monthCursor.month - 1;
     return computeMonthRow(Math.floor(idx / 12), ((idx % 12) + 12) % 12);
-  }, [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
+  }, [activeAccountId, chain, chainsByAccount, accounts, transfers, monthCursor]);
 
   const pctChange = (curr, prev) => (prev !== 0 && prev !== null && prev !== undefined) ? ((curr - prev) / Math.abs(prev)) * 100 : null;
 
@@ -5654,8 +5725,8 @@ function CashflowApp({ session, onBack }) {
     const derived = cashflowDerived(income, investments, expenses);
     return { rows, income, investments, expenses, finalBalance, hasData: any, ...derived };
   };
-  const ytdTotals = useMemo(() => computeYtdAgg(monthCursor.year, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
-  const prevYtdTotals = useMemo(() => computeYtdAgg(monthCursor.year - 1, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, monthCursor]);
+  const ytdTotals = useMemo(() => computeYtdAgg(monthCursor.year, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, transfers, monthCursor]);
+  const prevYtdTotals = useMemo(() => computeYtdAgg(monthCursor.year - 1, monthCursor.month), [activeAccountId, chain, chainsByAccount, accounts, transfers, monthCursor]);
   const summaryYear = viewMode === "ytd" ? monthCursor.year : yearCursor;
   const summaryRows = viewMode === "ytd" ? ytdTotals.rows : yearRows;
   const summaryTotals = viewMode === "ytd" ? ytdTotals : yearTotals;
@@ -5840,6 +5911,54 @@ function CashflowApp({ session, onBack }) {
     setEditingMonthKey(null);
   };
 
+  const openNewTransfer = () => {
+    if (accounts.length < 2) { setLastErrorMsg("Servono almeno due conti per creare un trasferimento."); setSaveState("error"); return; }
+    setEditingTransferId(null);
+    setTransferError("");
+    setTransferForm({ from_account_id: activeAccountId !== "all" ? activeAccountId : accounts[0].id, to_account_id: accounts.find((a) => a.id !== (activeAccountId !== "all" ? activeAccountId : accounts[0].id))?.id || "", transfer_date: new Date().toISOString().slice(0,10), amount: "", note: "" });
+    setTransferModalOpen(true);
+  };
+  const openTransferForMonth = (monthKey) => {
+    if (accounts.length < 2) { setRowError("Servono almeno due conti per creare un trasferimento."); return; }
+    const selected = activeAccountId !== "all" ? activeAccountId : accounts[0].id;
+    const other = accounts.find((a) => a.id !== selected)?.id || "";
+    setEditingTransferId(null);
+    setTransferError("");
+    setTransferForm({ from_account_id:selected, to_account_id:other, transfer_date:`${monthKey}-01`, amount:"", note:"" });
+    setTransferModalOpen(true);
+  };
+  const editTransfer = (t) => {
+    setEditingTransferId(t.id); setTransferError("");
+    setTransferForm({ from_account_id:t.from_account_id, to_account_id:t.to_account_id, transfer_date:t.transfer_date, amount:String(t.amount).replace(".",","), note:t.note || "" });
+    setTransferModalOpen(true);
+  };
+  const saveTransfer = async () => {
+    if (transferBusy) return;
+    const amount = parseFloat(String(transferForm.amount).replace(",","."));
+    if (!transferForm.from_account_id || !transferForm.to_account_id) { setTransferError("Seleziona entrambi i conti."); return; }
+    if (transferForm.from_account_id === transferForm.to_account_id) { setTransferError("Il conto di origine e destinazione devono essere diversi."); return; }
+    if (!transferForm.transfer_date) { setTransferError("Seleziona una data."); return; }
+    if (!Number.isFinite(amount) || amount <= 0) { setTransferError("Inserisci un importo maggiore di zero."); return; }
+    setTransferBusy(true);
+    const payload = { user_id:userId, from_account_id:transferForm.from_account_id, to_account_id:transferForm.to_account_id, transfer_date:transferForm.transfer_date, amount, note:transferForm.note.trim() || null, updated_at:new Date().toISOString() };
+    const res = editingTransferId
+      ? await supabase.from("cashflow_transfers").update(payload).eq("id",editingTransferId).eq("user_id",userId).select().single()
+      : await supabase.from("cashflow_transfers").insert(payload).select().single();
+    setTransferBusy(false);
+    if (res.error) { setTransferError(res.error.message); return; }
+    const normalized = { ...res.data, amount:Number(res.data.amount) };
+    setTransfers((prev) => editingTransferId ? prev.map((t) => t.id === editingTransferId ? normalized : t) : [normalized, ...prev]);
+    setTransferModalOpen(false); setEditingTransferId(null);
+  };
+  const deleteTransfer = async () => {
+    if (!removalTransfer) return;
+    const { error } = await supabase.from("cashflow_transfers").delete().eq("id",removalTransfer.id).eq("user_id",userId);
+    if (!error) setTransfers((prev) => prev.filter((t) => t.id !== removalTransfer.id));
+    else { setSaveState("error"); setLastErrorMsg(error.message); }
+    setRemovalTransfer(null);
+  };
+  const accountName = (id) => accounts.find((a) => a.id === id)?.name || "Conto";
+
   if (!loaded) {
     return (
       <div style={{ height: "100dvh", width: "100%", background: "var(--color-surface)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14 }}>
@@ -5854,6 +5973,10 @@ function CashflowApp({ session, onBack }) {
   return (
     <div style={{ height: "100dvh", width: "100%", background: "var(--color-surface)", overflow: "hidden", display: "flex", flexDirection: "column" }}>
       <PageHeader title="Flussi di cassa" onBack={onBack} />
+      <div style={{maxWidth:560,width:"100%",margin:"10px auto 0",padding:"0 16px",display:"flex",gap:8,boxSizing:"border-box"}}>
+        <button onClick={openNewTransfer} className="btn-outline-strong" style={{flex:1,padding:"9px 12px",borderRadius:"var(--radius-pill)",display:"flex",alignItems:"center",justifyContent:"center",gap:7}}><ArrowLeftRight size={16}/> Trasferimenti</button>
+        <button onClick={() => setTransferModalOpen("list")} className="btn-outline" style={{padding:"9px 13px",borderRadius:"var(--radius-pill)"}}>Storico ({transfers.length})</button>
+      </div>
 
       <div style={{ maxWidth: 560, width: "100%", margin: "0 auto", padding: "14px 16px", display: "flex", flexDirection: "column", minHeight: 0, flex: 1, boxSizing: "border-box" }}>
         {accounts.length === 0 ? (
@@ -6113,6 +6236,15 @@ function CashflowApp({ session, onBack }) {
                                 <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>Uscite</div>
                                 <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-danger)", whiteSpace: "nowrap" }}><Money>-{fmtEUR(r.expenses)}</Money></div>
                               </div>
+                              {activeAccountId !== "all" && r.transferNet !== 0 && <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>Trasferimenti</div>
+                                <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color:r.transferNet>0?"var(--color-success)":"var(--color-warning)", whiteSpace:"nowrap" }}><Money>{r.transferNet>0?"+":""}{fmtEUR(r.transferNet)}</Money></div>
+                              </div>}
+                              {r.transferCount > 0 && <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>{activeAccountId === "all" ? "Trasferimenti interni" : "Trasferimenti netti"}</div>
+                                <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight:700, color:activeAccountId === "all" ? "var(--color-primary)" : (r.transferNet >= 0 ? "var(--color-success)" : "var(--color-warning)"), whiteSpace:"nowrap" }}><Money>{activeAccountId === "all" ? fmtEUR(r.transferVolume) : `${r.transferNet>0?"+":""}${fmtEUR(r.transferNet)}`}</Money></div>
+                                {activeAccountId === "all" && <div style={{fontSize:"calc(9.5px + var(--mobile-font-boost))",color:"var(--color-text-secondary)"}}>Impatto totale 0 €</div>}
+                              </div>}
                               <div style={{ minWidth: 0, textAlign: "right" }}>
                                 <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>Risparmiato</div>
                                 <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)"), whiteSpace: "nowrap" }}>
@@ -6390,6 +6522,16 @@ function CashflowApp({ session, onBack }) {
             </div>
             )}
 
+            {!cfCarryForward && (
+              <div style={{marginTop:14,padding:"12px",borderRadius:"var(--radius-lg)",border:"1px solid var(--color-border)",background:"var(--color-bg-tint)"}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+                  <div><div style={{fontSize:"calc(13px + var(--mobile-font-boost))",fontWeight:800,color:"var(--color-heading)"}}>Trasferimenti interni</div><div style={{fontSize:"calc(11.5px + var(--mobile-font-boost))",color:"var(--color-text-secondary)",marginTop:2}}>Non modificano entrate, uscite o risparmio.</div></div>
+                  <button onClick={()=>openTransferForMonth(editingMonthKey)} type="button" className="btn-outline-strong" style={{padding:"7px 10px",borderRadius:"var(--radius-pill)",whiteSpace:"nowrap"}}>+ Aggiungi</button>
+                </div>
+                {transfersForMonth(editingMonthKey).length > 0 && <div style={{marginTop:10}}>{transfersForMonth(editingMonthKey).map((t)=><div key={t.id} style={{display:"flex",gap:8,alignItems:"center",padding:"7px 0",borderTop:"1px solid var(--color-border)"}}><div style={{flex:1,minWidth:0}}><div style={{fontSize:"calc(12.5px + var(--mobile-font-boost))",fontWeight:700}}>{accountName(t.from_account_id)} → {accountName(t.to_account_id)}</div><div style={{fontSize:"calc(11.5px + var(--mobile-font-boost))",color:"var(--color-text-secondary)"}}>{t.transfer_date}{t.note?` · ${t.note}`:""}</div></div><div className="mono" style={{fontWeight:800}}><Money>{fmtEUR(t.amount)}</Money></div><button type="button" onClick={()=>editTransfer(t)} className="btn-icon"><Pencil size={14}/></button><button type="button" onClick={()=>setRemovalTransfer(t)} className="btn-icon" style={{color:"var(--color-danger)"}}><Trash2 size={14}/></button></div>)}</div>}
+              </div>
+            )}
+
             {rowError && <FormMessage>{rowError}</FormMessage>}
             <ModalActions>
               <button onClick={() => setEditingMonthKey(null)} className="btn-outline" style={{ flex: 1, padding: "10px 0", borderRadius: "var(--radius-sm)", fontSize: "calc(14px + var(--mobile-font-boost))" }}>Annulla</button>
@@ -6426,6 +6568,31 @@ function CashflowApp({ session, onBack }) {
             <button onClick={saveRow} className="text-sm" style={{ width: "100%", padding: "11px 0", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-warning-border)", background: "var(--color-warning-bg)", color: "var(--color-warning)", cursor: "pointer", marginBottom: 8 }}>Sì, sovrascrivi</button>
             <button onClick={() => setCfOverwriteConfirm(false)} style={{ width: "100%", padding: "11px 0", borderRadius: "var(--radius-sm)", border: "none", background: "var(--color-bg-tint)", color: "var(--color-primary)", fontSize: "calc(14px + var(--mobile-font-boost))", cursor: "pointer" }}>Annulla</button>
           </AppModal>
+      )}
+
+      {transferModalOpen === true && (
+        <AppModal onClose={() => setTransferModalOpen(false)} overlayStyle={{zIndex:47}} panelStyle={{zIndex:48}}>
+          <div className="text-md" style={{marginBottom:14}}>{editingTransferId ? "Modifica trasferimento" : "Nuovo trasferimento"}</div>
+          <div className="section-label">Dal conto</div>
+          <select value={transferForm.from_account_id} onChange={(e)=>setTransferForm((f)=>({...f,from_account_id:e.target.value}))} className="input-field-lg">{accounts.map((a)=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
+          <div className="section-label">Al conto</div>
+          <select value={transferForm.to_account_id} onChange={(e)=>setTransferForm((f)=>({...f,to_account_id:e.target.value}))} className="input-field-lg">{accounts.filter((a)=>a.id!==transferForm.from_account_id).map((a)=><option key={a.id} value={a.id}>{a.name}</option>)}</select>
+          <div className="section-label">Data</div><input type="date" value={transferForm.transfer_date} onChange={(e)=>setTransferForm((f)=>({...f,transfer_date:e.target.value}))} className="input-field-lg" />
+          <div className="section-label">Importo</div><input inputMode="decimal" value={transferForm.amount} onChange={(e)=>setTransferForm((f)=>({...f,amount:e.target.value}))} placeholder="0,00" className="input-field-lg" />
+          <div className="section-label">Nota facoltativa</div><input value={transferForm.note} maxLength={500} onChange={(e)=>setTransferForm((f)=>({...f,note:e.target.value}))} placeholder="Es. Spostamento liquidità" className="input-field-lg" />
+          {transferError && <div style={{color:"var(--color-danger)",fontSize:"calc(13px + var(--mobile-font-boost))",marginBottom:10}}>{transferError}</div>}
+          <button onClick={saveTransfer} disabled={transferBusy} className="btn-primary" style={{width:"100%",padding:"11px 0",borderRadius:"var(--radius-sm)"}}>{transferBusy?"Salvataggio…":"Salva trasferimento"}</button>
+          <button onClick={()=>setTransferModalOpen(false)} className="btn-outline" style={{width:"100%",marginTop:8,padding:"10px 0",borderRadius:"var(--radius-sm)"}}>Annulla</button>
+        </AppModal>
+      )}
+      {transferModalOpen === "list" && (
+        <AppModal onClose={() => setTransferModalOpen(false)} overlayStyle={{zIndex:47}} panelStyle={{zIndex:48,maxHeight:"78dvh",overflowY:"auto"}}>
+          <div className="text-md" style={{marginBottom:12}}>Trasferimenti</div>
+          {transfers.length===0 ? <div style={{color:"var(--color-text-secondary)",fontSize:"calc(13px + var(--mobile-font-boost))"}}>Nessun trasferimento registrato.</div> : transfers.map((t)=><div key={t.id} style={{padding:"11px 0",borderBottom:"1px solid var(--color-border)",display:"flex",gap:10,alignItems:"center"}}><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700}}>{accountName(t.from_account_id)} → {accountName(t.to_account_id)}</div><div style={{fontSize:"calc(12px + var(--mobile-font-boost))",color:"var(--color-text-secondary)"}}>{t.transfer_date}{t.note?` · ${t.note}`:""}</div></div><div className="mono" style={{fontWeight:800}}><Money>{fmtEUR(t.amount)}</Money></div><button onClick={()=>editTransfer(t)} className="btn-icon"><Pencil size={15}/></button><button onClick={()=>setRemovalTransfer(t)} className="btn-icon" style={{color:"var(--color-danger)"}}><Trash2 size={15}/></button></div>)}
+        </AppModal>
+      )}
+      {removalTransfer && (
+        <AppModal onClose={()=>setRemovalTransfer(null)} overlayStyle={{zIndex:49}} panelStyle={{zIndex:50}}><div className="text-md" style={{marginBottom:6}}>Eliminare il trasferimento?</div><div style={{fontSize:"calc(13px + var(--mobile-font-boost))",color:"var(--color-text-secondary)",marginBottom:16}}>{accountName(removalTransfer.from_account_id)} → {accountName(removalTransfer.to_account_id)} · {fmtEUR(removalTransfer.amount)}</div><button onClick={deleteTransfer} className="btn-danger-outline">Sì, elimina</button><button onClick={()=>setRemovalTransfer(null)} className="btn-outline" style={{width:"100%",marginTop:8,padding:"10px 0",borderRadius:"var(--radius-sm)"}}>Annulla</button></AppModal>
       )}
 
       {removalMonthKey && (
