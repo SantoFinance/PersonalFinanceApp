@@ -78,23 +78,124 @@
   --app-segment-padding-bottom: 10px;
   --app-safe-bottom: env(safe-area-inset-bottom, 0px);
   --mobile-font-boost: 0px;
+  --font-caption: calc(13px + var(--mobile-font-boost));
+  --font-body: calc(15px + var(--mobile-font-boost));
+  --font-amount: calc(16px + var(--mobile-font-boost));
 }
 * { box-sizing: border-box; }
 .section-label { font-size: calc(11px + var(--mobile-font-boost)); letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); font-weight: 600; }
-.btn-primary { border: none; background: var(--color-heading); color: #FFFFFF; font-weight: 600; cursor: pointer; }
-.btn-danger-outline { width: 100%; padding: 11px 0; border-radius: var(--radius-sm); border: 1px solid var(--color-danger); background: var(--color-surface); color: var(--color-danger); font-size: calc(14px + var(--mobile-font-boost)); font-weight: 600; cursor: pointer; margin-bottom: 8px; }
-.btn-outline { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-primary); cursor: pointer; }
-.btn-outline-strong { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-heading); font-weight: 600; cursor: pointer; }
-.btn-icon { background: none; border: none; cursor: pointer; display: flex; align-items: center; }
+.btn-primary,
+.btn-outline,
+.btn-outline-strong,
+.btn-danger-outline,
+.btn-pill,
+.btn-icon {
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, opacity 140ms ease, transform 100ms ease, box-shadow 140ms ease;
+}
+.btn-primary,
+.btn-outline,
+.btn-outline-strong,
+.btn-danger-outline {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-size: calc(14px + var(--mobile-font-boost));
+  font-weight: 600;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+}
+.btn-primary { border: 1px solid var(--color-heading); background: var(--color-heading); color: #FFFFFF; }
+.btn-outline { border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-primary); }
+.btn-outline-strong { border: 1px solid var(--color-border-light); background: var(--color-surface); color: var(--color-heading); }
+.btn-danger-outline { width: 100%; border: 1px solid var(--color-danger); background: var(--color-surface); color: var(--color-danger); margin-bottom: 8px; }
+.btn-icon {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: currentColor;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.btn-pill {
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg-tint);
+  color: var(--color-primary);
+  font-size: var(--font-caption);
+  font-weight: 600;
+  line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.btn-primary:hover { background: var(--color-primary); border-color: var(--color-primary); }
+.btn-outline:hover,
+.btn-outline-strong:hover,
+.btn-pill:hover { border-color: var(--color-border-light); background: var(--color-bg-tint); }
+.btn-danger-outline:hover { background: var(--color-danger-bg); }
+.btn-icon:hover { background: var(--app-header-action-hover); }
+.btn-primary:active,
+.btn-outline:active,
+.btn-outline-strong:active,
+.btn-danger-outline:active,
+.btn-pill:active,
+.btn-icon:active { transform: translateY(1px); }
+.btn-primary:focus-visible,
+.btn-outline:focus-visible,
+.btn-outline-strong:focus-visible,
+.btn-danger-outline:focus-visible,
+.btn-pill:focus-visible,
+.btn-icon:focus-visible {
+  outline: 3px solid rgba(27, 212, 136, 0.28);
+  outline-offset: 2px;
+}
+.btn-primary:disabled,
+.btn-outline:disabled,
+.btn-outline-strong:disabled,
+.btn-danger-outline:disabled,
+.btn-pill:disabled,
+.btn-icon:disabled,
+button[aria-busy="true"] {
+  opacity: 0.52;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none;
+}
+button[aria-busy="true"] { position: relative; }
 .input-field { width: 100%; padding: 9px 10px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: calc(15px + var(--mobile-font-boost)); background: var(--color-surface); }
 .input-field-lg { width: 100%; padding: 10px 12px; border-radius: var(--radius-ms); border: 1px solid var(--color-border); font-size: calc(16px + var(--mobile-font-boost)); margin-bottom: 14px; }
 .input-month { display: block; width: 100%; min-width: 0; -webkit-appearance: none; appearance: none; box-sizing: border-box; padding: 9px 10px; border-radius: var(--radius-sm); border: 1px solid var(--color-border); font-size: calc(15px + var(--mobile-font-boost)); color: var(--color-heading); background: var(--color-surface); }
 .select-field { width: 100%; padding: 6px 8px; border-radius: 7px; border: 1px solid var(--color-border); font-size: calc(16px + var(--mobile-font-boost)); color: var(--color-heading); background: var(--color-surface); }
 .card-item { display: flex; align-items: center; padding: 11px 16px; border-radius: var(--radius-xl); background: var(--color-bg-tint); }
 .card-item-icon { width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--color-bg-tint); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.ui-metric-row { display: grid; gap: 8px; min-width: 0; }
+.ui-metric-item { min-width: 0; }
+.ui-metric-label { font-size: var(--font-caption); font-weight: 600; color: var(--color-primary); margin-bottom: 2px; }
+.ui-metric-value { font-size: var(--font-amount); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.ui-metric-note { margin-top: 3px; font-size: var(--font-caption); color: var(--color-border-light); }
+.ui-summary-strip { padding: 9px 0 10px; border-bottom: 1px solid var(--color-border); flex-shrink: 0; }
+.ui-summary-strip-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; font-size: var(--font-caption); font-weight: 700; color: var(--color-primary); text-transform: uppercase; letter-spacing: 0.04em; }
+.ui-summary-strip-meta { color: var(--color-border-light); font-weight: 400; text-transform: none; letter-spacing: normal; white-space: nowrap; }
+.ui-summary-strip-value { margin-top: 2px; font-size: calc(22px + var(--mobile-font-boost)); line-height: 1.12; font-weight: 750; overflow-wrap: anywhere; }
 .asset-list-card {
-  position: relative; display: flex; align-items: center; gap: 12px;
-  min-height: 96px; padding: 13px 14px; border: 1px solid var(--color-border);
+  position: relative; display: flex; align-items: center; gap: 9px;
+  min-height: 88px; padding: 10px 11px; border: 1px solid var(--color-border);
   border-radius: var(--radius-lg); background: var(--color-surface);
   box-shadow: 0 2px 8px rgba(5,91,101,0.055);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
@@ -106,33 +207,47 @@
 }
 .asset-list-card[data-clickable="true"]:active { transform: translateY(0); box-shadow: 0 2px 7px rgba(5,91,101,0.07); }
 .asset-list-icon {
-  width: 42px; height: 42px; border-radius: var(--radius-md);
+  width: 38px; height: 38px; border-radius: var(--radius-md);
   background: var(--color-bg-tint); border: 1px solid rgba(69,130,139,0.10);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.asset-list-content { flex: 1; min-width: 0; }
-.asset-list-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.asset-list-content { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.asset-list-heading { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 4px 10px; }
 .asset-list-name {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: calc(15.5px + var(--mobile-font-boost)); font-weight: 700; color: var(--color-heading);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2;
+  white-space: normal; overflow-wrap: anywhere; line-height: 1.16;
+  font-size: calc(15px + var(--mobile-font-boost)); font-weight: 700; color: var(--color-heading);
 }
-.asset-list-value { flex-shrink: 0; font-size: calc(16px + var(--mobile-font-boost)); font-weight: 700; color: var(--color-heading); }
-.asset-list-details { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 9px; }
-.asset-list-metrics { min-width: 0; }
-.asset-list-metric-label { margin-bottom: 2px; font-size: calc(10px + var(--mobile-font-boost)); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-border-light); }
-.asset-list-gain { font-size: calc(12.5px + var(--mobile-font-boost)); font-weight: 700; white-space: nowrap; }
-.asset-list-weight { margin-top: 5px; font-size: calc(11px + var(--mobile-font-boost)); color: var(--color-primary); }
+.asset-list-value { min-width: 0; font-size: var(--font-amount); font-weight: 700; color: var(--color-heading); white-space: nowrap; text-align: right; }
+.asset-list-return { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 8px; margin-top: 5px; }
+.asset-list-return-label { font-size: var(--font-caption); color: var(--color-primary); }
+.asset-list-gain { min-width: 0; font-size: var(--font-caption); font-weight: 400; white-space: nowrap; text-align: right; }
+.asset-list-footer { display: grid; grid-template-columns: minmax(0, 1fr) 82px; align-items: end; gap: 8px; margin-top: 4px; }
+.asset-list-weight { min-width: 0; font-size: var(--font-caption); color: var(--color-primary); }
 .asset-list-trend { display: flex; align-items: center; justify-content: flex-end; min-width: 82px; }
-.asset-list-chevron { flex-shrink: 0; margin-left: -3px; }
-.asset-list-empty { margin-top: 5px; font-size: calc(12.5px + var(--mobile-font-boost)); line-height: 1.4; color: var(--color-border-light); }
+.asset-list-chevron { flex-shrink: 0; margin-left: -4px; }
+.asset-list-empty { margin-top: 5px; font-size: var(--font-caption); line-height: 1.35; color: var(--color-border-light); }
+@media (max-width:375px) {
+  .asset-list-card { gap: 7px; padding: 9px; min-height: 86px; }
+  .asset-list-icon { width: 34px; height: 34px; }
+  .asset-list-heading { gap: 6px; }
+  .asset-list-name { font-size: calc(14px + var(--mobile-font-boost)); }
+  .asset-list-value { font-size: calc(15px + var(--mobile-font-boost)); }
+  .asset-list-return { gap: 6px; margin-top: 4px; }
+  .asset-list-gain { white-space: normal; overflow-wrap: anywhere; line-height: 1.15; }
+  .asset-list-footer { grid-template-columns: minmax(0, 1fr) 64px; gap: 5px; margin-top: 3px; }
+  .asset-list-trend { min-width: 64px; }
+  .asset-list-trend svg { width: 64px; max-width: 64px; }
+  .asset-list-chevron { margin-left: -6px; }
+}
 @media (prefers-reduced-motion: reduce) { .asset-list-card { transition: none !important; } }
+.nw-financial-primary-value { font-size: calc(16px + var(--mobile-font-boost)) !important; font-weight: 700; line-height: 1.2; }
+.nw-hero-card .nw-financial-primary-value { font-size: calc(18px + var(--mobile-font-boost)) !important; }
 .dashboard-card-transition {
   transform-origin: center top;
-  animation: dashboardCardQuick 180ms cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-@keyframes dashboardCardQuick {
-  from { opacity: 0.88; transform: translateY(-2px) scale(0.995); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  animation: none;
+  opacity: 1;
 }
 @media (prefers-reduced-motion: reduce) {
   .dashboard-card-transition { animation: none !important; transition: none !important; }
@@ -260,7 +375,8 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--color
 .app-modal-panel .btn-primary,
 .app-modal-panel .btn-outline,
 .app-modal-panel .btn-outline-strong,
-.app-modal-panel .btn-danger-outline {
+.app-modal-panel .btn-danger-outline,
+.app-modal-panel .btn-pill {
   border-radius: 10px !important;
 }
 @media (max-width: 600px) {
@@ -750,8 +866,8 @@ html[data-theme="dark"] .nw-hero-card svg { color:#F5F6F7 !important; }
 
 
 /* V56 TEST - incremento tipografico mobile di 2px */
-@media (max-width: 480px) {
-  :root { --mobile-font-boost: 2px; }
+@media (max-width: 360px) {
+  :root { --mobile-font-boost: 1px; }
 }
 
 </style>
@@ -1038,6 +1154,29 @@ function MonthYearPickerPopup({ pickerYear, setPickerYear, mode = "month", selec
     </>
   );
 }
+function MetricItem({ label, value, color = "var(--color-heading)", className = "", note = null, align = "left" }) {
+  return (
+    <div className={`ui-metric-item ${className}`.trim()} style={{ minWidth: 0, textAlign: align }}>
+      <div className="ui-metric-label">{label}</div>
+      <div className="mono ui-metric-value" style={{ color }}>{value}</div>
+      {note !== null && <div className="ui-metric-note">{note}</div>}
+    </div>
+  );
+}
+function MetricRow({ children, columns = 2, className = "", style = {} }) {
+  return <div className={`ui-metric-row ${className}`.trim()} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, ...style }}>{children}</div>;
+}
+function SummaryStrip({ label, value, meta = null, color = "var(--color-heading)" }) {
+  return (
+    <div className="ui-summary-strip">
+      <div className="ui-summary-strip-top"><span>{label}</span>{meta !== null && <span className="ui-summary-strip-meta">{meta}</span>}</div>
+      <div className="mono ui-summary-strip-value" style={{ color }}>{value}</div>
+    </div>
+  );
+}
+function AssetRow(props) {
+  return <ListItemCard {...props} />;
+}
 function ListItemCard({
   icon: Icon, iconSize = 22,
   name, value, hasData = true,
@@ -1062,18 +1201,16 @@ function ListItemCard({
           {hasData && <span className="mono asset-list-value"><Money>{fmtEUR(value)}</Money></span>}
         </div>
         {hasData ? (
-          <div className="asset-list-details">
-            <div className="asset-list-metrics">
-              <div className="asset-list-metric-label">Rendimento complessivo</div>
-              <div className="mono asset-list-gain" style={{ color: gainColor }}>
-                <Money>{gain > 0 ? "+" : ""}{fmtEUR(gain)}</Money>{gainPct !== null && ` · ${fmtPct(gainPct)}`}
-              </div>
-              <div className="asset-list-weight">{safeWeightPct.toFixed(0)}% {weightLabel}</div>
+          <>
+            <div className="asset-list-return">
+              <span className="asset-list-return-label">Rend. tot.</span>
+              <span className="mono asset-list-gain" style={{ color: gainColor }}><Money>{gain > 0 ? "+" : ""}{fmtEUR(gain)}</Money>{gainPct !== null && ` · ${fmtPct(gainPct)}`}</span>
             </div>
-            <div className="asset-list-trend">
-              <Sparkline values={sparklineValues} color={gainColor} width={82} height={32} />
+            <div className="asset-list-footer">
+              <span className="asset-list-weight">{safeWeightPct.toFixed(0)}% {weightLabel}</span>
+              <div className="asset-list-trend"><Sparkline values={sparklineValues} color={gainColor} width={82} height={28} /></div>
             </div>
-          </div>
+          </>
         ) : (
           <div className="asset-list-empty">{noDataMessage}</div>
         )}
@@ -1482,7 +1619,7 @@ function Splash() {
         <div className="brand-splash-progress" style={{ width: 92, height: 4, borderRadius: 999, overflow: "hidden" }}>
           <div className="splash-bar-fill" style={{ height: "100%", borderRadius: 999 }} />
         </div>
-        <div style={{ fontSize: "calc(9.5px + var(--mobile-font-boost))", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,.62)", fontWeight: 600 }}>Produced by Cozy Macaron</div>
+        <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(255,255,255,.62)", fontWeight: 600 }}>Produced by Cozy Macaron</div>
       </div>
     </div>
   );
@@ -1577,7 +1714,7 @@ function Hub({ session, onSelect, activeGroup, onToggleGroup }) {
                       );
                     })}
                     {HUB_GROUPS[item.key].items.some((i) => !i.active) && (
-                      <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", paddingLeft: 2 }}>Le voci in grigio arriveranno presto.</div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)", paddingLeft: 2 }}>Le voci in grigio arriveranno presto.</div>
                     )}
                   </div>
                 )}
@@ -2075,7 +2212,7 @@ function MainApp({ session, onBack }) {
             </div>
             <div key={`${periodMode}-${cursor.year}-${cursor.month}`} className="fade-in" style={{ textAlign: "center", padding: "10px 0", borderBottom: "1px solid var(--color-border)", flexShrink: 0 }}>
               <div className="mono" style={{ fontSize: "calc(34px + var(--mobile-font-boost))", fontWeight: 600, letterSpacing: "-0.01em", lineHeight: 1.1 }}><Money>{fmtEUR(grandTotal)}</Money></div>
-              <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-primary)", marginTop: 1 }}>{periodExpenses.length} {periodExpenses.length === 1 ? "movimento" : "movimenti"} {PERIODS.find((p) => p.id === periodMode).phrase}</div>
+              <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)", marginTop: 1 }}>{periodExpenses.length} {periodExpenses.length === 1 ? "movimento" : "movimenti"} {PERIODS.find((p) => p.id === periodMode).phrase}</div>
             </div>
             <div className="scrollbar-thin" style={{ flex: "1 1 auto", maxHeight: 360, minHeight: 0, overflowY: "auto", padding: "6px 0" }}>
               {activeCategories.length === 0 && categoriesLoaded ? (
@@ -2135,7 +2272,7 @@ function MainApp({ session, onBack }) {
               </button>
             </div>
             <div style={{ flex: 1, minHeight: 0 }} />
-            <div style={{ textAlign: "center", fontSize: "calc(10.5px + var(--mobile-font-boost))", color: saveState === "error" ? "var(--color-danger)" : "var(--color-border-light)", marginTop: 6, flexShrink: 0 }}>
+            <div style={{ textAlign: "center", fontSize: "var(--font-caption)", color: saveState === "error" ? "var(--color-danger)" : "var(--color-border-light)", marginTop: 6, flexShrink: 0 }}>
               {loaded ? (saveState === "saving" ? "Salvataggio…" : saveState === "error" ? `Errore: ${lastErrorMsg}` : "Dati sincronizzati") : "Caricamento…"}
             </div>
               </>
@@ -2148,7 +2285,7 @@ function MainApp({ session, onBack }) {
               <div className="text-md" style={{ flex: 1 }}>Nuovo movimento</div>
             </div>
             <form onSubmit={addExpense} className="fade-in" style={{ marginTop: 18, flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 10 }}>Categoria</div>
+              <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 10 }}>Categoria</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
                 {activeCategories.map((c) => (
                   <button type="button" key={c.id} className="chip" onClick={() => setForm({ ...form, category: c.id })} style={{ fontSize: "calc(14px + var(--mobile-font-boost))", padding: "8px 14px", borderRadius: "var(--radius-pill)", border: form.category === c.id ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: form.category === c.id ? "var(--color-primary)" : "#FFFFFF", color: form.category === c.id ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
@@ -2158,7 +2295,7 @@ function MainApp({ session, onBack }) {
               </div>
               {accounts.length > 1 && (
                 <>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 10 }}>Conto</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 10 }}>Conto</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
                     {accounts.map((a) => (
                       <button type="button" key={a.id} className="chip" onClick={() => setForm({ ...form, account_id: a.id })} style={{ fontSize: "calc(14px + var(--mobile-font-boost))", padding: "8px 14px", borderRadius: "var(--radius-pill)", border: form.account_id === a.id ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: form.account_id === a.id ? "var(--color-primary)" : "#FFFFFF", color: form.account_id === a.id ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
@@ -2168,11 +2305,11 @@ function MainApp({ session, onBack }) {
                   </div>
                 </>
               )}
-              <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Importo</div>
+              <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Importo</div>
               <input type="text" inputMode="decimal" placeholder="0,00 €" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="mono" autoFocus style={{ width: "95%", margin: "0 auto 20px", display: "block", padding: "14px 14px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", fontSize: "calc(24px + var(--mobile-font-boost))", fontWeight: 600 }} />
               <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Data</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Data</div>
                   <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} style={{ width: "95%", margin: "0 auto", display: "block", padding: "12px 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", fontSize: "calc(16px + var(--mobile-font-boost))", color: "var(--color-heading)" }} />
                 </div>
               </div>
@@ -2185,13 +2322,13 @@ function MainApp({ session, onBack }) {
                 </div>
                 {form.recurring && (
                   <div className="fade-in" style={{ marginTop: 12 }}>
-                    <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Ripeti fino a</div>
+                    <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Ripeti fino a</div>
                     <input type="month" value={form.recurringUntil} min={fullDateToMonth(form.date)} onChange={(e) => setForm({ ...form, recurringUntil: e.target.value })} style={{ width: "95%", minWidth: 0, WebkitAppearance: "none", appearance: "none", margin: "0 auto", display: "block", padding: "12px 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", fontSize: "calc(16px + var(--mobile-font-boost))", color: "var(--color-heading)" }} />
                     <div style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", color: "var(--color-primary)", marginTop: 6 }}>Verrà creato lo stesso movimento ogni mese, stesso giorno, fino al mese scelto incluso.</div>
                   </div>
                 )}
               </div>
-              <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nota (opzionale)</div>
+              <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nota (opzionale)</div>
               <input type="text" placeholder="Es. cena con amici" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} style={{ width: "95%", margin: "0 auto 8px", display: "block", padding: "12px 14px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", fontSize: "calc(16px + var(--mobile-font-boost))" }} />
               {error && <div style={{ color: "var(--color-danger)", fontSize: "calc(13px + var(--mobile-font-boost))", marginBottom: 8 }}>{error}</div>}
               <div style={{ flex: 1, minHeight: 8 }} />
@@ -2214,10 +2351,10 @@ function MainApp({ session, onBack }) {
                     <button type="button" onClick={() => setEditScope("single")} style={{ flex: 1, padding: "8px 0", borderRadius: "var(--radius-sm)", border: editScope === "single" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editScope === "single" ? "var(--color-primary)" : "#FFFFFF", color: editScope === "single" ? "#FFFFFF" : "var(--color-heading)", fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>Solo questo mese</button>
                     <button type="button" onClick={() => setEditScope("all")} style={{ flex: 1, padding: "8px 0", borderRadius: "var(--radius-sm)", border: editScope === "all" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editScope === "all" ? "var(--color-primary)" : "#FFFFFF", color: editScope === "all" ? "#FFFFFF" : "var(--color-heading)", fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>Tutti i {editGroupSize} mesi</button>
                   </div>
-                  {editScope === "all" && <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", color: "var(--color-warning)", marginTop: 8 }}>Categoria, conto, importo e nota verranno applicati a tutti i mesi. La data resta invariata su ciascuno.</div>}
+                  {editScope === "all" && <div style={{ fontSize: "var(--font-caption)", color: "var(--color-warning)", marginTop: 8 }}>Categoria, conto, importo e nota verranno applicati a tutti i mesi. La data resta invariata su ciascuno.</div>}
                 </div>
               )}
-              <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 10 }}>Categoria</div>
+              <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 10 }}>Categoria</div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
                 {(activeCategories.some((c) => c.id === editForm.category) ? activeCategories : [...activeCategories, CATEGORIES.find((c) => c.id === editForm.category)].filter(Boolean)).map((c) => (
                   <button type="button" key={c.id} className="chip" onClick={() => setEditForm({ ...editForm, category: c.id })} style={{ fontSize: "calc(14px + var(--mobile-font-boost))", padding: "8px 14px", borderRadius: "var(--radius-pill)", border: editForm.category === c.id ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editForm.category === c.id ? "var(--color-primary)" : "#FFFFFF", color: editForm.category === c.id ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
@@ -2227,7 +2364,7 @@ function MainApp({ session, onBack }) {
               </div>
               {accounts.length > 1 && (
                 <>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 10 }}>Conto</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 10 }}>Conto</div>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 24 }}>
                     {accounts.map((a) => (
                       <button type="button" key={a.id} className="chip" onClick={() => setEditForm({ ...editForm, account_id: a.id })} style={{ fontSize: "calc(14px + var(--mobile-font-boost))", padding: "8px 14px", borderRadius: "var(--radius-pill)", border: editForm.account_id === a.id ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editForm.account_id === a.id ? "var(--color-primary)" : "#FFFFFF", color: editForm.account_id === a.id ? "#FFFFFF" : "var(--color-heading)", cursor: "pointer" }}>
@@ -2237,15 +2374,15 @@ function MainApp({ session, onBack }) {
                   </div>
                 </>
               )}
-              <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Importo</div>
+              <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Importo</div>
               <input type="text" inputMode="decimal" placeholder="0,00 €" value={editForm.amount} onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })} className="mono" style={{ width: "95%", margin: "0 auto 20px", display: "block", padding: "14px 14px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", fontSize: "calc(24px + var(--mobile-font-boost))", fontWeight: 600 }} />
               <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Data</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Data</div>
                   <input type="date" value={editForm.date} disabled={editScope === "all"} onChange={(e) => setEditForm({ ...editForm, date: e.target.value })} style={{ width: "95%", margin: "0 auto", display: "block", padding: "12px 12px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", fontSize: "calc(16px + var(--mobile-font-boost))", color: "var(--color-heading)", opacity: editScope === "all" ? 0.5 : 1 }} />
                 </div>
               </div>
-              <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nota (opzionale)</div>
+              <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nota (opzionale)</div>
               <input type="text" placeholder="Es. cena con amici" value={editForm.note} onChange={(e) => setEditForm({ ...editForm, note: e.target.value })} style={{ width: "95%", margin: "0 auto 8px", display: "block", padding: "12px 14px", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", fontSize: "calc(16px + var(--mobile-font-boost))" }} />
               {editError && <div style={{ color: "var(--color-danger)", fontSize: "calc(13px + var(--mobile-font-boost))", marginBottom: 8 }}>{editError}</div>}
               <div style={{ flex: 1, minHeight: 8 }} />
@@ -2282,7 +2419,7 @@ function MainApp({ session, onBack }) {
               <div className="text-md" style={{ flex: 1 }}>Gestisci categorie</div>
             </div>
             <div className="scrollbar-thin" style={{ marginTop: 14, flex: 1, minHeight: 0, overflowY: "auto" }}>
-              <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Voci suggerite</div>
+              <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Voci suggerite</div>
               {SUGGESTED_CATEGORIES.map((sugg) => {
                 const row = categories.find((c) => c.label === sugg.label && !c.archived);
                 const active = !!row;
@@ -2298,7 +2435,7 @@ function MainApp({ session, onBack }) {
                 );
               })}
 
-              <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, margin: "18px 0 8px" }}>Voci personalizzate</div>
+              <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, margin: "18px 0 8px" }}>Voci personalizzate</div>
               {categories.filter((c) => !c.archived && !SUGGESTED_MAP[c.label]).length > 0 ? categories.filter((c) => !c.archived && !SUGGESTED_MAP[c.label]).map((c) => {
                 const IconComp = ICON_MAP[c.icon_key] || Tag;
                 return (
@@ -2314,9 +2451,9 @@ function MainApp({ session, onBack }) {
 
               {addingCustom ? (
                 <div className="fade-in" style={{ marginTop: 16, padding: 12, background: "var(--color-bg-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)" }}>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
                   <input type="text" placeholder="Es. Mutuo secondo immobile" value={newCatName} onChange={(e) => { setNewCatName(e.target.value); setCatError(""); }} autoFocus className="input-field-lg" />
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
                     {ICON_CHOICES.map(({ key, icon: IconComp }) => (
                       <button type="button" key={key} onClick={() => setNewCatIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-md)", cursor: "pointer", border: newCatIcon === key ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)", background: newCatIcon === key ? "var(--color-bg-tint)" : "#FFFFFF" }}>
@@ -2376,23 +2513,23 @@ function MainApp({ session, onBack }) {
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
               <button onClick={() => setView("home")} aria-label="Torna indietro" className="btn-icon" style={{ padding: 6, color: "var(--color-primary)" }}><ArrowLeft size={18} /></button>
               <div className="text-md" style={{ flex: 1 }}>Movimenti</div>
-              <button onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: filtersActive ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: filtersActive ? "var(--color-primary)" : "#FFFFFF", color: filtersActive ? "#FFFFFF" : "var(--color-primary)", fontSize: "calc(12px + var(--mobile-font-boost))", cursor: "pointer" }}>
+              <button onClick={() => setShowFilters((s) => !s)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: "var(--radius-pill)", border: filtersActive ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: filtersActive ? "var(--color-primary)" : "#FFFFFF", color: filtersActive ? "#FFFFFF" : "var(--color-primary)", fontSize: "var(--font-caption)", cursor: "pointer" }}>
                 <SlidersHorizontal size={13} /> Filtri
               </button>
             </div>
             {showFilters && (
               <div className="fade-in" style={{ marginTop: 8, padding: 10, background: "var(--color-bg-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", flexShrink: 0 }}>
-                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 5 }}>Periodo</div>
+                <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 5 }}>Periodo</div>
                 <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                   <input type="date" value={filters.dateFrom} onChange={(e) => setFilters({ ...filters, dateFrom: e.target.value })} aria-label="Da data" style={{ flex: 1, minWidth: 0, padding: "6px 8px", borderRadius: 7, border: "1px solid var(--color-border)", fontSize: "calc(16px + var(--mobile-font-boost))", color: "var(--color-heading)" }} />
                   <input type="date" value={filters.dateTo} onChange={(e) => setFilters({ ...filters, dateTo: e.target.value })} aria-label="A data" style={{ flex: 1, minWidth: 0, padding: "6px 8px", borderRadius: 7, border: "1px solid var(--color-border)", fontSize: "calc(16px + var(--mobile-font-boost))", color: "var(--color-heading)" }} />
                 </div>
-                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 5 }}>Categoria</div>
+                <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 5 }}>Categoria</div>
                 <select value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value })} className="select-field" style={{ marginBottom: 8 }}>
                   <option value="Tutte">Tutte le categorie</option>
                   {CATEGORIES.map((c) => <option key={c.id} value={c.id}>{c.label}{c.archived ? " (archiviata)" : ""}</option>)}
                 </select>
-                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 5 }}>Importo</div>
+                <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 5 }}>Importo</div>
                 <select value={filters.amountMode} onChange={(e) => setFilters({ ...filters, amountMode: e.target.value })} className="select-field" style={{ marginBottom: 6 }}>
                   <option value="any">Qualsiasi importo</option>
                   <option value="lt">Inferiore a</option>
@@ -2414,8 +2551,12 @@ function MainApp({ session, onBack }) {
                 )}
               </div>
             )}
-            <div className="mono" style={{ fontSize: "calc(13px + var(--mobile-font-boost))", color: "var(--color-primary)", padding: "8px 0", borderBottom: "1px solid var(--color-border)", flexShrink: 0, marginTop: showFilters ? 0 : 8 }}>
-              Totale: <span style={{ color: "var(--color-heading)", fontWeight: 600 }}><Money>{fmtEUR(filteredTotal)}</Money></span> · {filteredExpenses.length} {filteredExpenses.length === 1 ? "movimento" : "movimenti"}
+            <div style={{ marginTop: showFilters ? 0 : 8 }}>
+              <SummaryStrip
+                label="Totale movimenti"
+                value={<Money>{fmtEUR(filteredTotal)}</Money>}
+                meta={`${filteredExpenses.length} ${filteredExpenses.length === 1 ? "movimento" : "movimenti"}`}
+              />
             </div>
             <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", marginTop: 4 }}>
               {filteredExpenses.length > 0 ? filteredExpenses.map((e) => {
@@ -2427,10 +2568,12 @@ function MainApp({ session, onBack }) {
                     <Icon size={18} color="var(--color-primary)" style={{ flexShrink: 0 }} />
                     <div style={{ width: 40, fontSize: "calc(14px + var(--mobile-font-boost))", color: "var(--color-primary)", flexShrink: 0 }}>{String(d.getDate()).padStart(2, "0")}/{String(d.getMonth() + 1).padStart(2, "0")}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "calc(17px + var(--mobile-font-boost))", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.note ? e.note : cat ? cat.label : e.category}</div>
-                      {e.note && <div style={{ fontSize: "calc(13px + var(--mobile-font-boost))", color: "var(--color-border-light)" }}>{e.category}</div>}
+                      <div title={e.note || (cat ? cat.label : e.category)} style={{ fontSize: "calc(16px + var(--mobile-font-boost))", fontWeight: 550, overflow: "hidden", display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: 2, lineHeight: 1.25, overflowWrap: "anywhere" }}>{e.note ? e.note : cat ? cat.label : e.category}</div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {cat ? cat.label : e.category} · {(accounts.find((a) => a.id === e.account_id) || {}).name || "Conto non disponibile"}
+                      </div>
                     </div>
-                    <div className="mono" style={{ fontSize: "calc(18px + var(--mobile-font-boost))", fontWeight: 600, flexShrink: 0 }}><Money>{fmtEUR(e.amount)}</Money></div>
+                    <div className="mono" style={{ fontSize: "calc(16px + var(--mobile-font-boost))", fontWeight: 700, flexShrink: 0, whiteSpace: "nowrap" }}><Money>{fmtEUR(e.amount)}</Money></div>
                   </div>
                 );
               }) : (
@@ -2438,14 +2581,14 @@ function MainApp({ session, onBack }) {
               )}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 8, flexShrink: 0 }}>
-              <button onClick={() => exportCSV("filtered")} disabled={filteredExpenses.length === 0} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "7px 0", borderRadius: 7, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: filteredExpenses.length ? "var(--color-heading)" : "var(--color-border-light)", fontSize: "calc(12px + var(--mobile-font-boost))", cursor: filteredExpenses.length ? "pointer" : "not-allowed" }}>
+              <button onClick={() => exportCSV("filtered")} disabled={filteredExpenses.length === 0} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "7px 0", borderRadius: 7, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: filteredExpenses.length ? "var(--color-heading)" : "var(--color-border-light)", fontSize: "var(--font-caption)", cursor: filteredExpenses.length ? "pointer" : "not-allowed" }}>
                 <Download size={13} /> CSV filtrato
               </button>
-              <button onClick={() => exportCSV("all")} disabled={expenses.length === 0} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "7px 0", borderRadius: 7, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: expenses.length ? "var(--color-heading)" : "var(--color-border-light)", fontSize: "calc(12px + var(--mobile-font-boost))", cursor: expenses.length ? "pointer" : "not-allowed" }}>
+              <button onClick={() => exportCSV("all")} disabled={expenses.length === 0} style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, padding: "7px 0", borderRadius: 7, border: "1px solid var(--color-border)", background: "var(--color-surface)", color: expenses.length ? "var(--color-heading)" : "var(--color-border-light)", fontSize: "var(--font-caption)", cursor: expenses.length ? "pointer" : "not-allowed" }}>
                 <Download size={13} /> CSV completo
               </button>
             </div>
-            <div style={{ textAlign: "center", fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginTop: 6, flexShrink: 0 }}>Dati sincronizzati</div>
+            <div style={{ textAlign: "center", fontSize: "var(--font-caption)", color: "var(--color-border-light)", marginTop: 6, flexShrink: 0 }}>Dati sincronizzati</div>
           </>
         )}
       </div>
@@ -2603,7 +2746,7 @@ function CapitalChart({ months, market, cost, futureFromMonth }) {
 
   return (
     <div style={{ width: "100%", maxWidth: "100%", margin: "0 auto", overflow: "hidden", boxSizing: "border-box" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, flexWrap: "wrap", margin: "2px 0 8px", fontSize: "calc(11.5px + var(--mobile-font-boost))", fontWeight: 600 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 18, flexWrap: "wrap", margin: "2px 0 8px", fontSize: "var(--font-caption)", fontWeight: 600 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--color-heading)" }}>
           <span style={{ width: 22, height: 3, borderRadius: 3, background: "var(--color-primary)", display: "inline-block" }} />
           Valore di mercato
@@ -2773,7 +2916,7 @@ function PerformanceChart({ months, primary, secondary, primaryLabel="Rendimento
   const x=i=>p.l+i*(w-p.l-p.r)/(months.length-1), y=v=>p.t+(h-p.t-p.b)*(1-(v-min)/(max-min));
   const path=a=>{const pts=a.map((v,i)=>({x:x(i),y:y(v)}));if(pts.length===2)return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;let d=`M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} `;for(let i=0;i<pts.length-1;i++){const p0=pts[i===0?0:i-1],p1=pts[i],p2=pts[i+1],p3=pts[i+2<pts.length?i+2:i+1];const cp1x=p1.x+(p2.x-p0.x)/6,cp1y=p1.y+(p2.y-p0.y)/6,cp2x=p2.x-(p3.x-p1.x)/6,cp2y=p2.y-(p3.y-p1.y)/6;d+=`C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)} `;}return d.trim();};
   const pick=e=>{const r=ref.current.getBoundingClientRect();setActive(Math.max(0,Math.min(months.length-1,Math.round((((e.clientX-r.left)/r.width*w)-p.l)/((w-p.l-p.r)/(months.length-1))))))};
-  return <div><div style={{display:"flex",justifyContent:"center",gap:16,fontSize: "calc(11px + var(--mobile-font-boost))",fontWeight:600,marginBottom:5,flexWrap:"wrap"}}><span>━ {primaryLabel}</span>{secondary&&<span style={{color:"#9B6CB5"}}>━ {secondaryLabel}</span>}</div><svg ref={ref} viewBox={`0 0 ${w} ${h}`} style={{width:"100%",touchAction:"none"}} onPointerDown={e=>{e.currentTarget.setPointerCapture?.(e.pointerId);pick(e)}} onPointerMove={e=>active!==null&&pick(e)} onPointerUp={()=>setActive(null)} onPointerLeave={()=>setActive(null)}>{[0,.5,1].map(q=>{const v=min+(max-min)*q;return <g key={q}><line x1={p.l} x2={w-p.r} y1={y(v)} y2={y(v)} stroke="var(--color-border)" strokeDasharray="3 4"/><text x={p.l-6} y={y(v)+4} textAnchor="end" fontSize="10" fill="var(--color-border-light)">{v.toFixed(0)}%</text></g>})}<line x1={p.l} x2={w-p.r} y1={y(0)} y2={y(0)} stroke="var(--color-heading)" opacity=".25"/><path d={`${path(primary)} L ${x(primary.length-1)} ${y(0)} L ${x(0)} ${y(0)} Z`} fill="var(--color-primary)" opacity=".07"/><path d={path(primary)} fill="none" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>{secondary&&<path d={path(secondary)} fill="none" stroke="#B98CD1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>}{months.map((m,i)=>(i%Math.max(1,Math.ceil(months.length/6))===0||i===months.length-1)?<text key={m} x={x(i)} y={h-7} textAnchor={i===0?'start':i===months.length-1?'end':'middle'} fontSize="10" fill="var(--color-primary)">{fmtMonthYear(m)}</text>:null)}{active!==null&&<g pointerEvents="none"><line x1={x(active)} x2={x(active)} y1={p.t} y2={h-p.b} stroke="var(--color-heading)" strokeDasharray="3 3"/><rect x={Math.max(3,Math.min(w-184,x(active)-88))} y="3" width="181" height={secondary?61:45} rx="10" fill="#fff" stroke="var(--color-border)"/><text x={Math.max(13,Math.min(w-174,x(active)-78))} y="18" fontSize="10" fontWeight="700">{fmtMonthYear(months[active])}</text><text x={Math.max(13,Math.min(w-174,x(active)-78))} y="35" fontSize="10" fill="var(--color-primary)">{primaryLabel}: {fmtPct(primary[active])}</text>{secondary&&<text x={Math.max(13,Math.min(w-174,x(active)-78))} y="51" fontSize="10" fill="#9B6CB5">{secondaryLabel}: {fmtPct(secondary[active])}</text>}</g>}</svg></div>;
+  return <div><div style={{display:"flex",justifyContent:"center",gap:16,fontSize: "var(--font-caption)",fontWeight:600,marginBottom:5,flexWrap:"wrap"}}><span>━ {primaryLabel}</span>{secondary&&<span style={{color:"#9B6CB5"}}>━ {secondaryLabel}</span>}</div><svg ref={ref} viewBox={`0 0 ${w} ${h}`} style={{width:"100%",touchAction:"none"}} onPointerDown={e=>{e.currentTarget.setPointerCapture?.(e.pointerId);pick(e)}} onPointerMove={e=>active!==null&&pick(e)} onPointerUp={()=>setActive(null)} onPointerLeave={()=>setActive(null)}>{[0,.5,1].map(q=>{const v=min+(max-min)*q;return <g key={q}><line x1={p.l} x2={w-p.r} y1={y(v)} y2={y(v)} stroke="var(--color-border)" strokeDasharray="3 4"/><text x={p.l-6} y={y(v)+4} textAnchor="end" fontSize="10" fill="var(--color-border-light)">{v.toFixed(0)}%</text></g>})}<line x1={p.l} x2={w-p.r} y1={y(0)} y2={y(0)} stroke="var(--color-heading)" opacity=".25"/><path d={`${path(primary)} L ${x(primary.length-1)} ${y(0)} L ${x(0)} ${y(0)} Z`} fill="var(--color-primary)" opacity=".07"/><path d={path(primary)} fill="none" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>{secondary&&<path d={path(secondary)} fill="none" stroke="#B98CD1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>}{months.map((m,i)=>(i%Math.max(1,Math.ceil(months.length/6))===0||i===months.length-1)?<text key={m} x={x(i)} y={h-7} textAnchor={i===0?'start':i===months.length-1?'end':'middle'} fontSize="10" fill="var(--color-primary)">{fmtMonthYear(m)}</text>:null)}{active!==null&&<g pointerEvents="none"><line x1={x(active)} x2={x(active)} y1={p.t} y2={h-p.b} stroke="var(--color-heading)" strokeDasharray="3 3"/><rect x={Math.max(3,Math.min(w-184,x(active)-88))} y="3" width="181" height={secondary?61:45} rx="10" fill="#fff" stroke="var(--color-border)"/><text x={Math.max(13,Math.min(w-174,x(active)-78))} y="18" fontSize="10" fontWeight="700">{fmtMonthYear(months[active])}</text><text x={Math.max(13,Math.min(w-174,x(active)-78))} y="35" fontSize="10" fill="var(--color-primary)">{primaryLabel}: {fmtPct(primary[active])}</text>{secondary&&<text x={Math.max(13,Math.min(w-174,x(active)-78))} y="51" fontSize="10" fill="#9B6CB5">{secondaryLabel}: {fmtPct(secondary[active])}</text>}</g>}</svg></div>;
 }
 function PortfolioPieChart({ rows, activeId, setActiveId }) { const size=170,stroke=28,r=(size-stroke)/2,c=size/2,circ=2*Math.PI*r;let acc=0;const selected=rows.find(x=>x.id===activeId),total=rows.reduce((a,b)=>a+b.value,0);return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}><circle cx={c} cy={c} r={r} fill="none" stroke="var(--color-bg-tint)" strokeWidth={stroke}/><g transform={`rotate(-90 ${c} ${c})`}>{rows.map((row,i)=>{const dash=row.pct/100*circ,off=-acc/100*circ;acc+=row.pct;return <circle key={row.id} cx={c} cy={c} r={r} fill="none" stroke={PIE_COLORS[i%PIE_COLORS.length]} strokeWidth={activeId===row.id?stroke+6:stroke} strokeDasharray={`${dash} ${circ-dash}`} strokeDashoffset={off} opacity={!activeId||activeId===row.id?1:.25} onClick={()=>setActiveId(activeId===row.id?null:row.id)} style={{cursor:"pointer",transition:"all .18s"}}/>})}</g><text x={c} y={c-8} textAnchor="middle" fontSize="10" fill="var(--color-border-light)">{selected?selected.name:"Totale"}</text><text x={c} y={c+10} textAnchor="middle" fontSize="13" fontWeight="700" fill="var(--color-heading)">{fmtEUR(selected?selected.value:total)}</text>{selected&&<text x={c} y={c+26} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--color-primary)">{selected.pct.toFixed(1)}%</text>}</svg>;}
 function sumLatestValuationAsOf(items, valuations, itemIdField, cutoffFullDate) {
@@ -3047,7 +3190,7 @@ function ProfileApp({ session, onBack, themePreference, onThemePreferenceChange 
                   <div className="cozy-avatar" style={avatarStyle(avatarIndex)} />
                 </button>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize: "calc(12px + var(--mobile-font-boost))",color:"var(--color-primary)",fontWeight:700,letterSpacing:".07em",textTransform:"uppercase"}}>Il tuo spazio Cozy</div>
+                  <div style={{fontSize: "var(--font-caption)",color:"var(--color-primary)",fontWeight:700,letterSpacing:".07em",textTransform:"uppercase"}}>Il tuo spazio Cozy</div>
                   <div style={{fontSize: "calc(22px + var(--mobile-font-boost))",fontWeight:800,color:"var(--color-heading)",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fullName || "Cozy Explorer"}</div>
                   <div style={{fontSize: "calc(12.5px + var(--mobile-font-boost))",color:"var(--color-primary)",marginTop:3}}>Avatar sincronizzato tra i tuoi dispositivi.</div>
                 </div>
@@ -3125,7 +3268,7 @@ function ProfileApp({ session, onBack, themePreference, onThemePreferenceChange 
           ) : (
             <>
               <div className="scrollbar-thin" style={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "4px 0" }}>
-                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>I tuoi conti</div>
+                <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>I tuoi conti</div>
                 {accounts.length > 0 ? accounts.map((a) => (
                   <div key={a.id} onClick={() => openEditAccount(a)} className="row-hover" style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 6px", borderBottom: "1px dotted var(--color-border)", cursor: "pointer" }}>
                     <Landmark size={17} color="var(--color-primary)" style={{ flexShrink: 0 }} />
@@ -3139,7 +3282,7 @@ function ProfileApp({ session, onBack, themePreference, onThemePreferenceChange 
 
               {addingAccount ? (
                 <div className="fade-in" style={{ marginTop: 12, padding: 12, background: "var(--color-bg-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", flexShrink: 0 }}>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
                   <input type="text" placeholder="Es. Conto principale" value={newAccountName} onChange={(e) => { setNewAccountName(e.target.value); setAccError(""); }} autoFocus className="input-field-lg" />
                   {accError && <div style={{ color: "var(--color-danger)", fontSize: "calc(13px + var(--mobile-font-boost))", marginBottom: 8 }}>{accError}</div>}
                   <div style={{ display: "flex", gap: 8 }}>
@@ -3402,113 +3545,48 @@ function NetWorthApp({ session, onBack }) {
     return months;
   }, [investValuations, insuranceValuations, reValuations, cfEntries, cfSettings, cursor]);
 
-  const DashboardFinancialCard = ({ title, icon: Icon, amount, weightPct, data, hero = false, compact = false }) => {
+  const FinancialCard = ({ title, icon: Icon, amount, weightPct, data, hero = false, compact = false }) => {
     const gainColor = data.gain > 0 ? "var(--color-success)" : data.gain < 0 ? "var(--color-danger)" : "var(--color-border-light)";
-    const periodColor = data.periodReturnDelta > 0 ? "var(--color-success)" : data.periodReturnDelta < 0 ? "var(--color-danger)" : "var(--color-border-light)";
-    if (compact) {
-      const isExpanded = !!expandedCards[title];
-      const toggle = () => setExpandedCards((prev) => ({ ...prev, [title]: !prev[title] }));
-      const cardStyle = {
-        minHeight: isExpanded ? undefined : 126,
-        padding: isExpanded ? 16 : 12,
-        borderRadius: "var(--radius-xl)",
-        background: "var(--color-bg-tint)",
-        color: "var(--color-heading)",
-        minWidth: 0,
-        cursor: "pointer",
-        overflow: "hidden",
-        transition: "padding 180ms ease, min-height 180ms ease",
-      };
-      if (!isExpanded) {
-        return (
-          <div onClick={toggle} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }} aria-expanded="false" className="dashboard-card-transition" style={cardStyle}>
-            <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 8, marginBottom: 9 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color="var(--color-primary)" /></div>
-                <div className="nw-card-collapsed-title" style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, lineHeight: 1.15, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{title}</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 4, minWidth: 0 }}>
-                <div className="mono nw-card-total" style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, whiteSpace: "nowrap" }}><Money>{fmtEUR(amount)}</Money></div>
-                <ChevronDown size={13} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(0deg)", transition: "transform 180ms ease" }} />
-              </div>
-            </div>
-            <div className="nw-card-compact-bottom">
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)", marginBottom: 2 }}>Rendimento</div>
-                <div className="mono nw-card-number" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color: gainColor, whiteSpace: "nowrap", marginBottom: 4 }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money></div>
-                <div style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)", marginBottom: 2 }}>Rendimento %</div>
-                <div className="mono nw-card-number" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color: gainColor, whiteSpace: "nowrap" }}>{data.gainPct !== null ? fmtPct(data.gainPct) : "—"}</div>
-              </div>
-              <div className="nw-card-sparkline">
-                <Sparkline values={data.sparklineValues} color={gainColor} width={92} height={58} />
-              </div>
-            </div>
-          </div>
-        );
-      }
-      return (
-        <div onClick={toggle} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } }} aria-expanded="true" className="dashboard-card-transition" style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
-            <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color="var(--color-primary)" /></div>
-            <div style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, lineHeight: 1.15, flex: 1, minWidth: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{title}</div>
-            <div className="mono nw-card-number" style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0 }}><Money>{fmtEUR(amount)}</Money></div>
-            <ChevronDown size={15} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(180deg)", transition: "transform 180ms ease" }} />
-          </div>
-          <div style={{ display: "grid", minWidth: 0 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, padding: "8px 0 10px" }}>
-              <span style={{ fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)" }}>Rendimento complessivo</span>
-              <span className="mono nw-card-number" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color: gainColor, textAlign: "right", whiteSpace: "nowrap" }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</span>
-            </div>
-            <div className="nw-card-expanded-bottom" style={{ borderTop: "1px dotted var(--color-border)" }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, padding: "10px 0" }}>
-                  <span style={{ fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)" }}>Peso sul patrimonio</span>
-                  <span className="mono nw-card-number" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}>{weightPct.toFixed(1)}%</span>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, padding: "10px 0", borderTop: "1px dotted var(--color-border)" }}>
-                  <span style={{ fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)" }}>Contributo nel periodo</span>
-                  <span className="mono nw-card-number" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}><Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money></span>
-                </div>
-              </div>
-              <div className="nw-card-sparkline">
-                <Sparkline values={data.sparklineValues} color={gainColor} width={148} height={64} endLabel={data.periodReturnDelta !== null ? fmtPp(data.periodReturnDelta) : null} endLabelColor={periodColor} />
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
+    const isExpanded = compact ? !!expandedCards[title] : true;
+    const toggle = () => compact && setExpandedCards((prev) => ({ ...prev, [title]: !prev[title] }));
+    const cardStyle = {
+      padding: hero ? 16 : 12,
+      borderRadius: "var(--radius-xl)",
+      background: hero ? "linear-gradient(145deg, var(--color-heading), var(--color-primary))" : "var(--color-bg-tint)",
+      color: hero ? "#FFFFFF" : "var(--color-heading)",
+      boxShadow: hero ? "0 8px 20px rgba(5,91,101,0.14)" : "none",
+      minWidth: 0,
+      cursor: compact ? "pointer" : "default",
+      overflow: "hidden",
+    };
+    const returnValue = <><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</>;
+    const variationValue = <><Money>{netWorthPeriodDelta > 0 ? "+" : ""}{fmtEUR(netWorthPeriodDelta)}</Money>{netWorthPeriodDeltaPct !== null ? ` · ${fmtPct(netWorthPeriodDeltaPct)}` : ""}</>;
+    const row = (label, value, color, border = true) => (
+      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "baseline", gap: 10, padding: "7px 0", borderTop: border ? (hero ? "1px dotted rgba(255,255,255,0.24)" : "1px dotted var(--color-border)") : "none" }}>
+        <span style={{ fontSize: "var(--font-caption)", fontWeight: 500, color: hero ? "rgba(255,255,255,0.82)" : "var(--color-primary)", minWidth: 0 }}>{label}</span>
+        <span className="mono nw-card-number" style={{ fontSize: "var(--font-caption)", fontWeight: 400, color, textAlign: "right", overflowWrap: "anywhere" }}>{value}</span>
+      </div>
+    );
     return (
-      <div className={hero ? "nw-hero-card" : "nw-financial-card"} style={{ padding: hero ? "16px" : "14px", borderRadius: "var(--radius-xl)", background: hero ? "linear-gradient(145deg, var(--color-heading), var(--color-primary))" : "var(--color-bg-tint)", color: hero ? "#FFFFFF" : "var(--color-heading)", boxShadow: hero ? "0 8px 20px rgba(5,91,101,0.14)" : "none" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: hero ? 10 : 8 }}>
-          <div className={hero ? "nw-hero-icon" : "nw-card-icon"} style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: hero ? "rgba(255,255,255,0.14)" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icon size={17} color={hero ? "#FFFFFF" : "var(--color-primary)"} /></div>
-          <div style={{ fontSize: hero ? 16.5 : 20, fontWeight: 700, textTransform: "none", letterSpacing: "normal", opacity: 1, flex: 1, minWidth: 0, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{title}</div>
-          <div className="mono nw-card-number" style={{ fontSize: `calc(${hero ? 24 : 20}px + var(--mobile-font-boost))`, fontWeight: 700, whiteSpace: "nowrap", flexShrink: 0, marginLeft: 8 }}><Money>{fmtEUR(amount)}</Money></div>
-        </div>
-        {!hero && <div className="mono nw-card-number" style={{ fontSize: "calc(11px + var(--mobile-font-boost))", color: "var(--color-primary)", marginBottom: 12 }}>{weightPct.toFixed(1)}% del patrimonio</div>}
-        <div style={{ display: "grid", minWidth: 0 }}>
-          {hero && (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, padding: "8px 0 10px", borderTop: "1px dotted rgba(255,255,255,0.24)" }}>
-              <span style={{ fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 600, color: "rgba(255,255,255,0.82)" }}>Rendimento complessivo</span>
-              <span className="mono nw-card-number" style={{ fontSize: "calc(13px + var(--mobile-font-boost))", fontWeight: 700, color: data.gain >= 0 ? "#66F0B5" : "#FFD0C8", whiteSpace: "nowrap" }}><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</span>
-            </div>
-          )}
-          <div className="nw-card-expanded-bottom" style={{ borderTop: hero ? "1px dotted rgba(255,255,255,0.24)" : "none" }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, padding: "10px 0" }}>
-                <span style={{ fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 600, color: hero ? "rgba(255,255,255,0.82)" : "var(--color-primary)" }}>{hero ? "Variazione patrimonio" : "Rendimento complessivo"}</span>
-                <span className="mono nw-card-number" style={{ fontSize: "calc(13.5px + var(--mobile-font-boost))", fontWeight: 700, color: hero ? (netWorthPeriodDelta >= 0 ? "#66F0B5" : "#FFD0C8") : gainColor, textAlign: "right", whiteSpace: "nowrap" }}>{hero ? <span className="nw-variation-values"><span><Money>{netWorthPeriodDelta > 0 ? "+" : ""}{fmtEUR(netWorthPeriodDelta)}</Money></span>{netWorthPeriodDeltaPct !== null && <span>{fmtPct(netWorthPeriodDeltaPct)}</span>}</span> : <><Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>{data.gainPct !== null ? ` · ${fmtPct(data.gainPct)}` : ""}</>}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, padding: "10px 0", borderTop: hero ? "1px dotted rgba(255,255,255,0.24)" : "1px dotted var(--color-border)" }}>
-                <span style={{ fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 600, color: hero ? "rgba(255,255,255,0.82)" : "var(--color-primary)" }}>Contributo nel periodo</span>
-                <span className="mono nw-card-number" style={{ fontSize: "calc(13.5px + var(--mobile-font-boost))", fontWeight: 700, color: hero ? "#FFFFFF" : "var(--color-primary)", whiteSpace: "nowrap" }}><Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money></span>
-              </div>
-            </div>
-            <div className="nw-card-sparkline">
-              <Sparkline values={data.sparklineValues} color={gainColor} width={148} height={64} endLabel={data.periodReturnDelta !== null ? fmtPp(data.periodReturnDelta) : null} endLabelColor={periodColor} style={{ filter: hero ? "brightness(1.35)" : "none" }} />
-            </div>
+      <div onClick={compact ? toggle : undefined} role={compact ? "button" : undefined} tabIndex={compact ? 0 : undefined} onKeyDown={compact ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); } } : undefined} aria-expanded={compact ? isExpanded : undefined} className="dashboard-card-transition" style={cardStyle}>
+        <div style={{ display: "grid", gridTemplateColumns: "34px minmax(0, 1fr) auto", alignItems: "center", gap: 8 }}>
+          <div className={hero ? "nw-hero-icon" : "nw-card-icon"} style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: hero ? "rgba(255,255,255,0.14)" : "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center" }}><Icon size={17} color={hero ? "#FFFFFF" : "var(--color-primary)"} /></div>
+          <div style={{ fontSize: hero ? 17 : 16.5, fontWeight: 700, lineHeight: 1.2, minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }}>{title}</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, minWidth: 0, alignSelf: "center" }}>
+            <span className="mono nw-financial-primary-value" style={{ textAlign: "right", overflowWrap: "anywhere" }}><Money>{fmtEUR(amount)}</Money></span>
+            {compact && <ChevronDown size={14} color="var(--color-border-light)" style={{ flexShrink: 0, transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 180ms ease" }} />}
           </div>
         </div>
+        {(!compact || isExpanded) && (
+          <div style={{ marginTop: 9, paddingTop: 1, borderTop: hero ? "1px solid rgba(255,255,255,0.30)" : "1px solid var(--color-border)" }}>
+            {hero && row("Rend. tot.", returnValue, data.gain >= 0 ? "#66F0B5" : "#FFD0C8", false)}
+            {hero && row("Var. patrimonio", variationValue, netWorthPeriodDelta >= 0 ? "#66F0B5" : "#FFD0C8")}
+            {hero && row("Contributi", <Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money>, "#FFFFFF")}
+            {!hero && row("Rendimento", <Money>{data.gain > 0 ? "+" : ""}{fmtEUR(data.gain)}</Money>, gainColor, false)}
+            {!hero && row("Rendimento %", data.gainPct !== null ? fmtPct(data.gainPct) : "—", gainColor)}
+            {!hero && row("Contributi", <Money>{data.investedDelta > 0 ? "+" : ""}{fmtEUR(data.investedDelta)}</Money>, "var(--color-primary)")}
+          </div>
+        )}
       </div>
     );
   };
@@ -3627,11 +3705,11 @@ function NetWorthApp({ session, onBack }) {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <DashboardFinancialCard title="Patrimonio" icon={PieChart} amount={grandTotal} weightPct={100} data={financialDashboard} hero />
+              <FinancialCard title="Patrimonio" icon={PieChart} amount={grandTotal} weightPct={100} data={financialDashboard} hero />
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <DashboardFinancialCard title="Investimenti" icon={TrendingUp} amount={investTotal} weightPct={grandTotal !== 0 ? (investTotal / grandTotal) * 100 : 0} data={investDashboard} compact />
-                <DashboardFinancialCard title="Assicurazioni e Previdenza" icon={Shield} amount={insuranceTotal} weightPct={grandTotal !== 0 ? (insuranceTotal / grandTotal) * 100 : 0} data={insuranceDashboard} compact />
-                <div style={{ padding: 12, borderRadius: "var(--radius-xl)", background: "var(--color-bg-tint)", minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}><div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Home size={17} color="var(--color-primary)" /></div><span style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, lineHeight: 1.15 }}>Immobili</span></div><div className="mono nw-card-number" style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700 }}><Money>{fmtEUR(realEstateTotal)}</Money></div><div className="mono nw-card-number" style={{ fontSize: "calc(10px + var(--mobile-font-boost))", color: "var(--color-primary)", marginTop: 5 }}>{realEstateWeight.toFixed(1)}% del patrimonio</div><div style={{ marginTop: 12, fontSize: "calc(9.5px + var(--mobile-font-boost))", lineHeight: 1.4, color: "var(--color-border-light)" }}>Approfondimento dedicato previsto in una fase successiva.</div></div>
+                <FinancialCard title="Investimenti" icon={TrendingUp} amount={investTotal} weightPct={grandTotal !== 0 ? (investTotal / grandTotal) * 100 : 0} data={investDashboard} compact />
+                <FinancialCard title="Assicurazioni e Previdenza" icon={Shield} amount={insuranceTotal} weightPct={grandTotal !== 0 ? (insuranceTotal / grandTotal) * 100 : 0} data={insuranceDashboard} compact />
+                <div style={{ padding: 12, borderRadius: "var(--radius-xl)", background: "var(--color-bg-tint)", minWidth: 0 }}><div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}><div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Home size={17} color="var(--color-primary)" /></div><span style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, lineHeight: 1.15 }}>Immobili</span></div><div className="mono nw-card-number" style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700 }}><Money>{fmtEUR(realEstateTotal)}</Money></div><div className="mono nw-card-number" style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)", marginTop: 5 }}>{realEstateWeight.toFixed(1)}% patrimonio</div><div style={{ marginTop: 12, fontSize: "var(--font-caption)", lineHeight: 1.4, color: "var(--color-border-light)" }}>Approfondimento dedicato previsto in una fase successiva.</div></div>
                 <div
                   onClick={() => setLiquidityExpanded((v) => !v)}
                   role="button"
@@ -3640,7 +3718,7 @@ function NetWorthApp({ session, onBack }) {
                   aria-expanded={liquidityExpanded}
                   className="dashboard-card-transition"
                   style={{
-                    minHeight: liquidityExpanded ? undefined : 126,
+                    minHeight: liquidityExpanded ? undefined : 58,
                     padding: liquidityExpanded ? 16 : 12,
                     borderRadius: "var(--radius-xl)",
                     background: "var(--color-bg-tint)",
@@ -3651,28 +3729,14 @@ function NetWorthApp({ session, onBack }) {
                   }}
                 >
                   {!liquidityExpanded ? (
-                    <>
-                      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                          <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Banknote size={17} color="var(--color-primary)" /></div>
-                          <div style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, lineHeight: 1.15 }}>Liquidità</div>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                          <div className="mono nw-card-total" style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, whiteSpace: "nowrap" }}><Money>{fmtEUR(cashflowTotal)}</Money></div>
-                          <ChevronDown size={13} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(0deg)", transition: "transform 180ms ease" }} />
-                        </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "34px minmax(0, 1fr) auto", alignItems: "center", gap: 8 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: "var(--radius-ms)", background: "var(--color-surface)", display: "flex", alignItems: "center", justifyContent: "center" }}><Banknote size={17} color="var(--color-primary)" /></div>
+                      <div style={{ fontSize: "calc(16.5px + var(--mobile-font-boost))", fontWeight: 700, lineHeight: 1.2, minWidth: 0 }}>Liquidità</div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, minWidth: 0 }}>
+                        <div className="mono nw-card-total" style={{ fontSize: "calc(16px + var(--mobile-font-boost))", fontWeight: 700, lineHeight: 1.2, textAlign: "right", whiteSpace: "nowrap" }}><Money>{fmtEUR(cashflowTotal)}</Money></div>
+                        <ChevronDown size={14} color="var(--color-border-light)" style={{ flexShrink: 0, transform: "rotate(0deg)", transition: "transform 180ms ease" }} />
                       </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)", gap: 10, alignItems: "start" }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 3 }}>Copertura spese</div>
-                          <div className="mono nw-card-number" style={{ fontSize: "calc(14px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-heading)", whiteSpace: "nowrap" }}>{coverageMonths !== null ? `${coverageMonths.toFixed(1)} mesi` : "—"}</div>
-                        </div>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 3 }}>Stabilità spese</div>
-                          <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", fontWeight: 700, color: expenseStability.color, lineHeight: 1.25 }}>● {expenseStability.label}</div>
-                        </div>
-                      </div>
-                    </>
+                    </div>
                   ) : (
                     <>
                       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 14 }}>
@@ -3711,7 +3775,7 @@ function NetWorthApp({ session, onBack }) {
                               <span style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)" }}>Peso sul patrimonio</span>
                               <span className="mono nw-card-number" style={{ fontSize: "calc(13px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}>{liquidityWeight.toFixed(1)}%</span>
                             </div>
-                            <div style={{ fontSize: "calc(10px + var(--mobile-font-boost))", fontStyle: "italic", color: "var(--color-border-light)" }}>Medie calcolate sugli ultimi {coverageSampleMonths} mesi disponibili</div>
+                            <div style={{ fontSize: "var(--font-caption)", fontStyle: "italic", color: "var(--color-border-light)" }}>Medie calcolate sugli ultimi {coverageSampleMonths} mesi disponibili</div>
                           </div>
                         </div>
                       </div>
@@ -3735,13 +3799,13 @@ function StatsSection({ items,getName,getIcon,buildMapAsOf,getTotalsFromMap,hist
  const metrics=useMemo(()=>{if(!series.months.length)return null;const m=series.market,c=series.cost,months=series.months,first=m[0],last=m.at(-1),contrib=c.at(-1)-c[0],delta=last-first,gain=delta-contrib;let peak=m[0],draw=0,best=null,worst=null,pos=0,maxV=m[0],minV=m[0],maxM=months[0],minM=months[0];const rs=[];m.forEach((v,i)=>{if(v>maxV){maxV=v;maxM=months[i]}if(v<minV){minV=v;minM=months[i]}peak=Math.max(peak,v);if(peak>0)draw=Math.min(draw,(v-peak)/peak*100);if(i&&m[i-1]>0){const r=(v-m[i-1]-(c[i]-c[i-1]))/m[i-1]*100;rs.push(r);if(r>0)pos++;if(!best||r>best.v)best={v:r,m:months[i]};if(!worst||r<worst.v)worst={v:r,m:months[i]}}});const avg=rs.length?rs.reduce((a,b)=>a+b,0)/rs.length:0,sd=rs.length?Math.sqrt(rs.reduce((a,b)=>a+(b-avg)**2,0)/rs.length):0;return{delta,contrib,gain,ret:first>0?gain/first*100:null,pos,n:rs.length,best,worst,draw,stability:rs.length<3?"Dati insufficienti":sd<2?"Regolare":sd<5?"Moderatamente variabile":sd<10?"Variabile":"Molto variabile",share:delta>0?gain/delta*100:null,maxV,maxM,minV,minM}},[series]);
  const map=useMemo(()=>buildMapAsOf(cursorFullDate),[cursorFullDate,items]), totals=it=>getTotalsFromMap(it,map), grand=items.reduce((a,it)=>a+totals(it).marketValue,0),cost=items.reduce((a,it)=>a+totals(it).costBasis,0),gain=grand-cost; const rows=[...items].map((it,i)=>({id:it.id,it,name:getName(it),value:totals(it).marketValue,pct:grand>0?totals(it).marketValue/grand*100:0,color:PIE_COLORS[i%PIE_COLORS.length]})).sort((a,b)=>b.value-a.value);
  const statsTitles=statsScope==="patrimonio"?{total:"TOTALE PATRIMONIO",detail:"STATISTICHE PATRIMONIALI"}:statsScope==="posizioni"?{total:"TOTALE POSIZIONI",detail:"STATISTICHE DELLE POSIZIONI"}:{total:"TOTALE PORTAFOGLIO",detail:"STATISTICHE DEL PORTAFOGLIO"};
- const StatRows=({rows})=><div style={{display:"flex",flexDirection:"column",gap:0}}>{rows.map(([l,v,signal],i,arr)=><div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:12,padding:"10px 4px",borderBottom:i<arr.length-1?"1px dotted var(--color-border)":"none"}}><span style={{fontSize: "calc(12px + var(--mobile-font-boost))",color:"var(--color-primary)",lineHeight:1.25}}>{l}</span><span className="mono" style={{fontSize: "calc(12px + var(--mobile-font-boost))",fontWeight:700,color:signal>0?"var(--color-success)":signal<0?"var(--color-danger)":"var(--color-heading)",textAlign:"right",whiteSpace:"nowrap"}}><Money>{v}</Money></span></div>)}</div>;
- const StatGroup=({title,rows,first=false})=><div style={{marginTop:first?2:18}}><div className="section-label" style={{fontSize: "calc(10px + var(--mobile-font-boost))",letterSpacing:"0.1em",margin:"0 4px 5px",color:"var(--color-heading)"}}>{title}</div><StatRows rows={rows}/></div>;
+ const StatRows=({rows})=><div style={{display:"flex",flexDirection:"column",gap:0}}>{rows.map(([l,v,signal],i,arr)=><div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:12,padding:"10px 4px",borderBottom:i<arr.length-1?"1px dotted var(--color-border)":"none"}}><span style={{fontSize: "var(--font-caption)",color:"var(--color-primary)",lineHeight:1.25}}>{l}</span><span className="mono" style={{fontSize: "var(--font-caption)",fontWeight:700,color:signal>0?"var(--color-success)":signal<0?"var(--color-danger)":"var(--color-heading)",textAlign:"right",whiteSpace:"nowrap"}}><Money>{v}</Money></span></div>)}</div>;
+ const StatGroup=({title,rows,first=false})=><div style={{marginTop:first?2:18}}><div className="section-label" style={{fontSize: "var(--font-caption)",letterSpacing:"0.1em",margin:"0 4px 5px",color:"var(--color-heading)"}}>{title}</div><StatRows rows={rows}/></div>;
  const Head=({title,open,setOpen})=><div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",marginBottom:open?10:0}}><div style={{width:24}}/><div className="section-label">{title}</div><ChevronDown size={18} color="var(--color-primary)" style={{transform:open?"rotate(180deg)":"none"}}/></div>;
  if(!items.length&&emptyMessage)return <div style={{padding:30,textAlign:"center",color:"var(--color-primary)"}}>{emptyMessage}</div>;
  return <div className="fade-in scrollbar-thin" style={{flex:1,minHeight:0,overflowY:"auto",overflowX:"hidden",padding:"10px 4px"}}><div className="no-scrollbar" style={{display:"flex",justifyContent:"center",gap:4,overflowX:"auto",marginBottom:14}}>{ranges.map(r=><button key={r} onClick={()=>setRange(r)} style={{padding:"6px 11px",borderRadius:20,border:"none",background:range===r?"var(--color-primary)":"var(--color-bg-tint)",color:range===r?"#fff":"var(--color-heading)",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{r}</button>)}</div><Head title={chartTitle} open={chartOpen} setOpen={setChartOpen}/>{chartOpen&&<><div style={{background:"var(--color-bg-tint)",borderRadius:"var(--radius-xl)",padding:"18px 16px"}}><div style={{textAlign:"center"}}><div className="mono" style={{fontSize: "calc(30px + var(--mobile-font-boost))",fontWeight:700}}><Money>{fmtEUR(grand)}</Money></div><div className="mono" style={{fontSize: "calc(13px + var(--mobile-font-boost))",color:gain>=0?"var(--color-success)":"var(--color-danger)"}}><Money>{gain>0?"+":""}{fmtEUR(gain)}</Money>{cost>0?` (${fmtPct(gain/cost*100)})`:""}</div></div><CapitalChart months={series.months} market={series.market} cost={series.cost} futureFromMonth={null}/></div></>}
  <section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title="Andamento percentuale" open={perfOpen} setOpen={setPerfOpen}/>{perfOpen&&<div style={{background:"var(--color-bg-tint)",borderRadius:"var(--radius-xl)",padding:"14px 12px"}}><PerformanceChart months={series.months} {...perf}/></div>}</section>
- <section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title={compositionTitle} open={compOpen} setOpen={setCompOpen}/>{compOpen&&<><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}><PortfolioPieChart rows={rows} activeId={activeId} setActiveId={setActiveId}/><div style={{flex:"1 1 180px"}}>{rows.map((r,i)=><div key={r.id} onClick={()=>setActiveId(activeId===r.id?null:r.id)} style={{display:"grid",gridTemplateColumns:"12px minmax(0,1fr) auto",gap:8,alignItems:"center",padding:"8px",borderRadius:9,background:activeId===r.id?"var(--color-bg-tint)":"transparent",opacity:activeId&&activeId!==r.id?.35:1,cursor:"pointer"}}><i style={{width:10,height:10,borderRadius:"50%",background:PIE_COLORS[i%PIE_COLORS.length]}}/><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span><span className="mono" style={{fontSize: "calc(11px + var(--mobile-font-boost))",textAlign:"right",fontWeight:700}}>{r.pct.toFixed(0)}%<br/><Money>{fmtEUR(r.value)}</Money></span></div>)}</div></div>{rows[0]&&<div style={{marginTop:14,padding:"12px 14px",borderRadius:12,background:"var(--color-bg-tint)",display:"flex",justifyContent:"space-between"}}><span><small style={{color:"var(--color-primary)"}}>{biggestLabel}</small><br/><b>{rows[0].name}</b></span><span className="mono" style={{textAlign:"right"}}><Money>{fmtEUR(rows[0].value)}</Money><br/><small>{rows[0].pct.toFixed(0)}% del totale</small></span></div>}</>}</section>
+ <section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title={compositionTitle} open={compOpen} setOpen={setCompOpen}/>{compOpen&&<><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}><PortfolioPieChart rows={rows} activeId={activeId} setActiveId={setActiveId}/><div style={{flex:"1 1 180px"}}>{rows.map((r,i)=><div key={r.id} onClick={()=>setActiveId(activeId===r.id?null:r.id)} style={{display:"grid",gridTemplateColumns:"12px minmax(0,1fr) auto",gap:8,alignItems:"center",padding:"8px",borderRadius:9,background:activeId===r.id?"var(--color-bg-tint)":"transparent",opacity:activeId&&activeId!==r.id?.35:1,cursor:"pointer"}}><i style={{width:10,height:10,borderRadius:"50%",background:PIE_COLORS[i%PIE_COLORS.length]}}/><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span><span className="mono" style={{fontSize: "var(--font-caption)",textAlign:"right",fontWeight:700}}>{r.pct.toFixed(0)}%<br/><Money>{fmtEUR(r.value)}</Money></span></div>)}</div></div>{rows[0]&&<div style={{marginTop:14,padding:"12px 14px",borderRadius:12,background:"var(--color-bg-tint)",display:"flex",justifyContent:"space-between"}}><span><small style={{color:"var(--color-primary)"}}>{biggestLabel}</small><br/><b>{rows[0].name}</b></span><span className="mono" style={{textAlign:"right"}}><Money>{fmtEUR(rows[0].value)}</Money><br/><small>{rows[0].pct.toFixed(0)}% del totale</small></span></div>}</>}</section>
  {metrics&&<section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title="Statistiche" open={statsOpen} setOpen={setStatsOpen}/>{statsOpen&&<div>
  <StatGroup first title={statsTitles.total} rows={[["Rendimento totale",`${gain>0?"+":""}${fmtEUR(gain)}`,gain],["Rendimento totale %",cost>0?fmtPct(gain/cost*100):"—",cost>0?gain/cost*100:null]]}/>
  <StatGroup title="DATI DEL PERIODO" rows={[["Contributi nel periodo",`${metrics.contrib>0?"+":""}${fmtEUR(metrics.contrib)}`,metrics.contrib],["Rendimento del periodo",`${metrics.gain>0?"+":""}${fmtEUR(metrics.gain)}`,metrics.gain],["Rendimento % del periodo",metrics.ret===null?"—":fmtPct(metrics.ret),metrics.ret]]}/>
@@ -4172,9 +4236,9 @@ function InvestApp({ session, onBack }) {
             {addingPortfolio && (
               <AppModal onClose={() => { setAddingPortfolio(false); setNewPortfolioName(""); setNewPortfolioIcon("Briefcase"); setPortfolioError(""); }} overlayStyle={{ zIndex: 39 }} panelStyle={{ bottom: 24 + kbOffset, maxHeight: "75dvh", overflowY: "auto", zIndex: 40 }} scrollable>
                   <div className="text-md" style={{ marginBottom: 14 }}>Nuovo portafoglio</div>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome portafoglio</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome portafoglio</div>
                   <input type="text" placeholder="Es. Portafoglio ETF" value={newPortfolioName} onChange={(e) => { setNewPortfolioName(e.target.value); setPortfolioError(""); }} autoFocus className="input-field-lg" />
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
                     {INVEST_ICON_CHOICES.map(({ key, icon: IconComp }) => (
                       <button type="button" key={key} onClick={() => setNewPortfolioIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-md)", cursor: "pointer", border: newPortfolioIcon === key ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)", background: newPortfolioIcon === key ? "var(--color-bg-tint)" : "#FFFFFF" }}>
@@ -4282,7 +4346,7 @@ function InvestApp({ session, onBack }) {
             {addingHolding && (
               <AppModal onClose={() => { setAddingHolding(false); setNewHoldingName(""); setHoldingError(""); }} overlayStyle={{ zIndex: 39 }} panelStyle={{ bottom: 24 + kbOffset, maxHeight: "75dvh", overflowY: "auto", zIndex: 40 }} scrollable>
                   <div className="text-md" style={{ marginBottom: 14 }}>Nuovo titolo</div>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome titolo</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome titolo</div>
                   <input type="text" placeholder="Es. iShares MSCI World Acc" value={newHoldingName} onChange={(e) => { setNewHoldingName(e.target.value); setHoldingError(""); }} autoFocus className="input-field-lg" />
                   {holdingError && <FormMessage>{holdingError}</FormMessage>}
                   <ModalActions>
@@ -4306,9 +4370,9 @@ function InvestApp({ session, onBack }) {
             {editingPortfolioId && (
               <AppModal onClose={() => setEditingPortfolioId(null)} overlayStyle={{ zIndex: 39 }} panelStyle={{ bottom: 24 + kbOffset, maxHeight: "75dvh", overflowY: "auto", zIndex: 40 }} scrollable>
                   <div className="text-md" style={{ marginBottom: 14 }}>Modifica portafoglio</div>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
                   <input type="text" value={editPortfolioName} onChange={(e) => { setEditPortfolioName(e.target.value); setEditPortfolioError(""); }} autoFocus className="input-field-lg" />
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
                     {INVEST_ICON_CHOICES.map(({ key, icon: IconComp }) => (
                       <button type="button" key={key} onClick={() => setEditPortfolioIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-md)", cursor: "pointer", border: editPortfolioIcon === key ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)", background: editPortfolioIcon === key ? "var(--color-bg-tint)" : "#FFFFFF" }}>
@@ -4373,7 +4437,7 @@ function InvestApp({ session, onBack }) {
                   {valForm.carryForward && (
                     <div className="fade-in" style={{ marginTop: 8 }}>
                       <input type="month" value={valForm.carryUntil} min={valForm.value_date} onChange={(e) => setValForm({ ...valForm, carryUntil: e.target.value })} className="input-month" />
-                      <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-primary)", marginTop: 6 }}>Stesso valore di mercato e costo storico ripetuto ogni mese fino a quello scelto (incluso). Potrai comunque modificarlo in un mese specifico in seguito.</div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)", marginTop: 6 }}>Stesso valore di mercato e costo storico ripetuto ogni mese fino a quello scelto (incluso). Potrai comunque modificarlo in un mese specifico in seguito.</div>
                     </div>
                   )}
                 </div>
@@ -4388,15 +4452,15 @@ function InvestApp({ session, onBack }) {
                     <div className="fade-in" style={{ marginTop: 8 }}>
                       <div style={{ display: "flex", flexWrap: "nowrap", gap: 8, marginBottom: 8 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Fino a</div>
+                          <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Fino a</div>
                           <input type="month" value={valForm.contributionUntil} min={valForm.value_date} onChange={(e) => setValForm({ ...valForm, contributionUntil: e.target.value })} className="input-month" />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Versamento mensile</div>
+                          <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Versamento mensile</div>
                           <input type="text" inputMode="decimal" placeholder="0,00 €" value={valForm.contributionAmount} onChange={(e) => setValForm({ ...valForm, contributionAmount: e.target.value })} className="mono" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)", fontSize: "calc(15px + var(--mobile-font-boost))", background: "var(--color-surface)" }} />
                         </div>
                       </div>
-                      <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-primary)" }}>Ogni mese, a partire dal successivo, valore di mercato e costo storico aumenteranno di questo importo rispetto al mese precedente, fino al mese scelto incluso.</div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)" }}>Ogni mese, a partire dal successivo, valore di mercato e costo storico aumenteranno di questo importo rispetto al mese precedente, fino al mese scelto incluso.</div>
                     </div>
                   )}
                 </div>
@@ -4417,10 +4481,10 @@ function InvestApp({ session, onBack }) {
                     <div key={v.id} className="fade-in" style={{ padding: 12, background: "var(--color-bg-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", marginBottom: 10 }}>
                       {editValGroupSize > 1 && (
                         <div style={{ marginBottom: 10, padding: 10, background: "var(--color-warning-bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-warning-border)" }}>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-warning)", fontWeight: 600, marginBottom: 6 }}>{isContributionGroup ? "Versamento ricorrente" : "Valore \"portato avanti\""} · {editValGroupSize} mesi</div>
+                          <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-warning)", fontWeight: 600, marginBottom: 6 }}>{isContributionGroup ? "Versamento ricorrente" : "Valore \"portato avanti\""} · {editValGroupSize} mesi</div>
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button type="button" onClick={() => setEditValScope("single")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "single" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "single" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "single" ? "#FFFFFF" : "var(--color-heading)", fontSize: "calc(11.5px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>Solo questo mese</button>
-                            <button type="button" onClick={() => setEditValScope("all")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "all" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "all" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "all" ? "#FFFFFF" : "var(--color-heading)", fontSize: "calc(11.5px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>Tutti i {editValGroupSize} mesi</button>
+                            <button type="button" onClick={() => setEditValScope("single")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "single" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "single" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "single" ? "#FFFFFF" : "var(--color-heading)", fontSize: "var(--font-caption)", fontWeight: 600, cursor: "pointer" }}>Solo questo mese</button>
+                            <button type="button" onClick={() => setEditValScope("all")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "all" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "all" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "all" ? "#FFFFFF" : "var(--color-heading)", fontSize: "var(--font-caption)", fontWeight: 600, cursor: "pointer" }}>Tutti i {editValGroupSize} mesi</button>
                           </div>
                         </div>
                       )}
@@ -4446,7 +4510,7 @@ function InvestApp({ session, onBack }) {
                             <div className="section-label" style={{ marginBottom: 6 }}>Versamento mensile</div>
                             <input type="text" inputMode="decimal" value={editValForm.contribution_amount} onChange={(e) => setEditValForm({ ...editValForm, contribution_amount: e.target.value })} className="mono input-field" />
                           </div>
-                          <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-primary)", marginBottom: 10 }}>Ricalcola tutti i {editValGroupSize} mesi a partire da questi valori, aggiungendo il versamento mensile ad ogni mese successivo.</div>
+                          <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)", marginBottom: 10 }}>Ricalcola tutti i {editValGroupSize} mesi a partire da questi valori, aggiungendo il versamento mensile ad ogni mese successivo.</div>
                         </>
                       ) : (
                         <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
@@ -4484,7 +4548,7 @@ function InvestApp({ session, onBack }) {
                     <div style={{ width: 54, fontSize: "calc(13.5px + var(--mobile-font-boost))", color: "var(--color-primary)", flexShrink: 0, textTransform: "capitalize", whiteSpace: "nowrap" }}>{fmtMonthYear(fullDateToMonth(v.value_date))}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="mono text-lg"><Money>{fmtEUR(v.market_value)}</Money></div>
-                      <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", color: "var(--color-border-light)" }}>Costo: <Money>{fmtEUR(v.cost_basis)}</Money></div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)" }}>Costo: <Money>{fmtEUR(v.cost_basis)}</Money></div>
                     </div>
                     <div className="mono text-sm" style={{ color: gain > 0 ? "var(--color-success)" : gain < 0 ? "var(--color-danger)" : "var(--color-border-light)", flexShrink: 0 }}><Money>{gain > 0 ? "+" : ""}{fmtEUR(gain)}</Money></div>
                   </div>
@@ -4504,7 +4568,7 @@ function InvestApp({ session, onBack }) {
             {editingHoldingId && (
               <AppModal onClose={() => setEditingHoldingId(null)} overlayStyle={{ zIndex: 39 }} panelStyle={{ bottom: 24 + kbOffset, zIndex: 40 }}>
                   <div className="text-md" style={{ marginBottom: 14 }}>Modifica titolo</div>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
                   <input type="text" value={editHoldingName} onChange={(e) => { setEditHoldingName(e.target.value); setEditHoldingError(""); }} autoFocus className="input-field-lg" />
                   {editHoldingError && <FormMessage>{editHoldingError}</FormMessage>}
                   <ModalActions>
@@ -4823,9 +4887,9 @@ function InsuranceApp({ session, onBack }) {
             {addingPolicy && (
               <AppModal onClose={() => { setAddingPolicy(false); setNewPolicyName(""); setNewPolicyIcon("Shield"); setPolicyError(""); }} overlayStyle={{ zIndex: 39 }} panelStyle={{ bottom: 24 + kbOffset, maxHeight: "75dvh", overflowY: "auto", zIndex: 40 }} scrollable>
                   <div className="text-md" style={{ marginBottom: 14 }}>Nuova polizza o fondo</div>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome polizza o fondo</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome polizza o fondo</div>
                   <input type="text" placeholder="Es. Fondo Pensione Aperto" value={newPolicyName} onChange={(e) => { setNewPolicyName(e.target.value); setPolicyError(""); }} autoFocus className="input-field-lg" />
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
                     {INSURANCE_ICON_CHOICES.map(({ key, icon: IconComp }) => (
                       <button type="button" key={key} onClick={() => setNewPolicyIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-md)", cursor: "pointer", border: newPolicyIcon === key ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)", background: newPolicyIcon === key ? "var(--color-bg-tint)" : "#FFFFFF" }}>
@@ -4866,7 +4930,7 @@ function InsuranceApp({ session, onBack }) {
                 </div>
                 <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="section-label" style={{ marginBottom: 6 }}>Valore attuale</div>
+                    <div className="section-label" style={{ marginBottom: 6 }}>Val. attuale</div>
                     <input type="text" inputMode="decimal" placeholder="0,00 €" value={valForm.market_value} onChange={(e) => setValForm({ ...valForm, market_value: e.target.value })} className="mono input-field" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -4884,7 +4948,7 @@ function InsuranceApp({ session, onBack }) {
                   {valForm.carryForward && (
                     <div className="fade-in" style={{ marginTop: 8 }}>
                       <input type="month" value={valForm.carryUntil} min={valForm.value_date} onChange={(e) => setValForm({ ...valForm, carryUntil: e.target.value })} className="input-month" />
-                      <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-primary)", marginTop: 6 }}>Stesso valore di mercato e costo storico ripetuto ogni mese fino a quello scelto (incluso). Potrai comunque modificarlo in un mese specifico in seguito.</div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)", marginTop: 6 }}>Stesso valore di mercato e costo storico ripetuto ogni mese fino a quello scelto (incluso). Potrai comunque modificarlo in un mese specifico in seguito.</div>
                     </div>
                   )}
                 </div>
@@ -4899,15 +4963,15 @@ function InsuranceApp({ session, onBack }) {
                     <div className="fade-in" style={{ marginTop: 8 }}>
                       <div style={{ display: "flex", flexWrap: "nowrap", gap: 8, marginBottom: 8 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Fino a</div>
+                          <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Fino a</div>
                           <input type="month" value={valForm.contributionUntil} min={valForm.value_date} onChange={(e) => setValForm({ ...valForm, contributionUntil: e.target.value })} className="input-month" />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Versamento mensile</div>
+                          <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Versamento mensile</div>
                           <input type="text" inputMode="decimal" placeholder="0,00 €" value={valForm.contributionAmount} onChange={(e) => setValForm({ ...valForm, contributionAmount: e.target.value })} className="mono" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)", fontSize: "calc(15px + var(--mobile-font-boost))", background: "var(--color-surface)" }} />
                         </div>
                       </div>
-                      <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-primary)" }}>Ogni mese, a partire dal successivo, valore di mercato e costo storico aumenteranno di questo importo rispetto al mese precedente, fino al mese scelto incluso.</div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)" }}>Ogni mese, a partire dal successivo, valore di mercato e costo storico aumenteranno di questo importo rispetto al mese precedente, fino al mese scelto incluso.</div>
                     </div>
                   )}
                 </div>
@@ -4928,10 +4992,10 @@ function InsuranceApp({ session, onBack }) {
                     <div key={v.id} className="fade-in" style={{ padding: 12, background: "var(--color-bg-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", marginBottom: 10 }}>
                       {editValGroupSize > 1 && (
                         <div style={{ marginBottom: 10, padding: 10, background: "var(--color-warning-bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-warning-border)" }}>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-warning)", fontWeight: 600, marginBottom: 6 }}>{isContributionGroup ? "Versamento ricorrente" : "Valore \"portato avanti\""} · {editValGroupSize} mesi</div>
+                          <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-warning)", fontWeight: 600, marginBottom: 6 }}>{isContributionGroup ? "Versamento ricorrente" : "Valore \"portato avanti\""} · {editValGroupSize} mesi</div>
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button type="button" onClick={() => setEditValScope("single")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "single" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "single" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "single" ? "#FFFFFF" : "var(--color-heading)", fontSize: "calc(11.5px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>Solo questo mese</button>
-                            <button type="button" onClick={() => setEditValScope("all")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "all" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "all" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "all" ? "#FFFFFF" : "var(--color-heading)", fontSize: "calc(11.5px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>Tutti i {editValGroupSize} mesi</button>
+                            <button type="button" onClick={() => setEditValScope("single")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "single" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "single" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "single" ? "#FFFFFF" : "var(--color-heading)", fontSize: "var(--font-caption)", fontWeight: 600, cursor: "pointer" }}>Solo questo mese</button>
+                            <button type="button" onClick={() => setEditValScope("all")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "all" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "all" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "all" ? "#FFFFFF" : "var(--color-heading)", fontSize: "var(--font-caption)", fontWeight: 600, cursor: "pointer" }}>Tutti i {editValGroupSize} mesi</button>
                           </div>
                         </div>
                       )}
@@ -4957,12 +5021,12 @@ function InsuranceApp({ session, onBack }) {
                             <div className="section-label" style={{ marginBottom: 6 }}>Versamento mensile</div>
                             <input type="text" inputMode="decimal" value={editValForm.contribution_amount} onChange={(e) => setEditValForm({ ...editValForm, contribution_amount: e.target.value })} className="mono input-field" />
                           </div>
-                          <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-primary)", marginBottom: 10 }}>Ricalcola tutti i {editValGroupSize} mesi a partire da questi valori, aggiungendo il versamento mensile ad ogni mese successivo.</div>
+                          <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)", marginBottom: 10 }}>Ricalcola tutti i {editValGroupSize} mesi a partire da questi valori, aggiungendo il versamento mensile ad ogni mese successivo.</div>
                         </>
                       ) : (
                         <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div className="section-label" style={{ marginBottom: 6 }}>Valore attuale</div>
+                            <div className="section-label" style={{ marginBottom: 6 }}>Val. attuale</div>
                             <input type="text" inputMode="decimal" value={editValForm.market_value} onChange={(e) => setEditValForm({ ...editValForm, market_value: e.target.value })} className="mono input-field" />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
@@ -4995,7 +5059,7 @@ function InsuranceApp({ session, onBack }) {
                     <div style={{ width: 54, fontSize: "calc(13.5px + var(--mobile-font-boost))", color: "var(--color-primary)", flexShrink: 0, textTransform: "capitalize", whiteSpace: "nowrap" }}>{fmtMonthYear(fullDateToMonth(v.value_date))}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="mono text-lg"><Money>{fmtEUR(v.market_value)}</Money></div>
-                      <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", color: "var(--color-border-light)" }}>Versato: <Money>{fmtEUR(v.cost_basis)}</Money></div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)" }}>Versato: <Money>{fmtEUR(v.cost_basis)}</Money></div>
                     </div>
                     <div className="mono text-sm" style={{ color: gain > 0 ? "var(--color-success)" : gain < 0 ? "var(--color-danger)" : "var(--color-border-light)", flexShrink: 0 }}><Money>{gain > 0 ? "+" : ""}{fmtEUR(gain)}</Money></div>
                   </div>
@@ -5015,9 +5079,9 @@ function InsuranceApp({ session, onBack }) {
             {editingPolicyId && (
               <AppModal onClose={() => setEditingPolicyId(null)} overlayStyle={{ zIndex: 39 }} panelStyle={{ bottom: 24 + kbOffset, maxHeight: "75dvh", overflowY: "auto", zIndex: 40 }} scrollable>
                   <div className="text-md" style={{ marginBottom: 14 }}>Modifica</div>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
                   <input type="text" value={editPolicyName} onChange={(e) => { setEditPolicyName(e.target.value); setEditPolicyError(""); }} autoFocus className="input-field-lg" />
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
                     {INSURANCE_ICON_CHOICES.map(({ key, icon: IconComp }) => (
                       <button type="button" key={key} onClick={() => setEditPolicyIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-md)", cursor: "pointer", border: editPolicyIcon === key ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)", background: editPolicyIcon === key ? "var(--color-bg-tint)" : "#FFFFFF" }}>
@@ -5309,9 +5373,9 @@ function RealEstateApp({ session, onBack }) {
             {addingProperty && (
               <AppModal onClose={() => { setAddingProperty(false); setNewPropertyName(""); setNewPropertyIcon("Home"); setPropertyError(""); }} overlayStyle={{ zIndex: 39 }} panelStyle={{ bottom: 24 + kbOffset, maxHeight: "75dvh", overflowY: "auto", zIndex: 40 }} scrollable>
                   <div className="text-md" style={{ marginBottom: 14 }}>Nuovo immobile</div>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome immobile</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome immobile</div>
                   <input type="text" placeholder="Es. Appartamento Milano" value={newPropertyName} onChange={(e) => { setNewPropertyName(e.target.value); setPropertyError(""); }} autoFocus className="input-field-lg" />
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
                     {REALESTATE_ICON_CHOICES.map(({ key, icon: IconComp }) => (
                       <button type="button" key={key} onClick={() => setNewPropertyIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-md)", cursor: "pointer", border: newPropertyIcon === key ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)", background: newPropertyIcon === key ? "var(--color-bg-tint)" : "#FFFFFF" }}>
@@ -5350,7 +5414,7 @@ function RealEstateApp({ session, onBack }) {
                 </div>
                 <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="section-label" style={{ marginBottom: 6 }}>Valore attuale</div>
+                    <div className="section-label" style={{ marginBottom: 6 }}>Val. attuale</div>
                     <input type="text" inputMode="decimal" placeholder="0,00 €" value={valForm.market_value} onChange={(e) => setValForm({ ...valForm, market_value: e.target.value })} className="mono input-field" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -5368,7 +5432,7 @@ function RealEstateApp({ session, onBack }) {
                   {valForm.carryForward && (
                     <div className="fade-in" style={{ marginTop: 8 }}>
                       <input type="month" value={valForm.carryUntil} min={valForm.value_date} onChange={(e) => setValForm({ ...valForm, carryUntil: e.target.value })} className="input-month" />
-                      <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-primary)", marginTop: 6 }}>Stesso valore di mercato e costo storico ripetuto ogni mese fino a quello scelto (incluso). Potrai comunque modificarlo in un mese specifico in seguito.</div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)", marginTop: 6 }}>Stesso valore di mercato e costo storico ripetuto ogni mese fino a quello scelto (incluso). Potrai comunque modificarlo in un mese specifico in seguito.</div>
                     </div>
                   )}
                 </div>
@@ -5389,10 +5453,10 @@ function RealEstateApp({ session, onBack }) {
                     <div key={v.id} className="fade-in" style={{ padding: 12, background: "var(--color-bg-tint)", borderRadius: "var(--radius-md)", border: "1px solid var(--color-border)", marginBottom: 10 }}>
                       {editValGroupSize > 1 && (
                         <div style={{ marginBottom: 10, padding: 10, background: "var(--color-warning-bg)", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-warning-border)" }}>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-warning)", fontWeight: 600, marginBottom: 6 }}>Valore "portato avanti" · {editValGroupSize} mesi</div>
+                          <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-warning)", fontWeight: 600, marginBottom: 6 }}>Valore "portato avanti" · {editValGroupSize} mesi</div>
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button type="button" onClick={() => setEditValScope("single")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "single" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "single" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "single" ? "#FFFFFF" : "var(--color-heading)", fontSize: "calc(11.5px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>Solo questo mese</button>
-                            <button type="button" onClick={() => setEditValScope("all")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "all" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "all" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "all" ? "#FFFFFF" : "var(--color-heading)", fontSize: "calc(11.5px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>Tutti i {editValGroupSize} mesi</button>
+                            <button type="button" onClick={() => setEditValScope("single")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "single" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "single" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "single" ? "#FFFFFF" : "var(--color-heading)", fontSize: "var(--font-caption)", fontWeight: 600, cursor: "pointer" }}>Solo questo mese</button>
+                            <button type="button" onClick={() => setEditValScope("all")} style={{ flex: 1, padding: "6px 0", borderRadius: 6, border: editValScope === "all" ? "1px solid var(--color-primary)" : "1px solid var(--color-border)", background: editValScope === "all" ? "var(--color-primary)" : "#FFFFFF", color: editValScope === "all" ? "#FFFFFF" : "var(--color-heading)", fontSize: "var(--font-caption)", fontWeight: 600, cursor: "pointer" }}>Tutti i {editValGroupSize} mesi</button>
                           </div>
                         </div>
                       )}
@@ -5404,7 +5468,7 @@ function RealEstateApp({ session, onBack }) {
                       </div>
                       <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div className="section-label" style={{ marginBottom: 6 }}>Valore attuale</div>
+                          <div className="section-label" style={{ marginBottom: 6 }}>Val. attuale</div>
                           <input type="text" inputMode="decimal" value={editValForm.market_value} onChange={(e) => setEditValForm({ ...editValForm, market_value: e.target.value })} className="mono input-field" />
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -5426,7 +5490,7 @@ function RealEstateApp({ session, onBack }) {
                     <div style={{ width: 54, fontSize: "calc(13.5px + var(--mobile-font-boost))", color: "var(--color-primary)", flexShrink: 0, textTransform: "capitalize", whiteSpace: "nowrap" }}>{fmtMonthYear(fullDateToMonth(v.value_date))}</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className="mono text-lg"><Money>{fmtEUR(v.market_value)}</Money></div>
-                      <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", color: "var(--color-border-light)" }}>Costo: <Money>{fmtEUR(v.cost_basis)}</Money></div>
+                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)" }}>Costo: <Money>{fmtEUR(v.cost_basis)}</Money></div>
                     </div>
                     <div className="mono text-sm" style={{ color: gain > 0 ? "var(--color-success)" : gain < 0 ? "var(--color-danger)" : "var(--color-border-light)", flexShrink: 0 }}><Money>{gain > 0 ? "+" : ""}{fmtEUR(gain)}</Money></div>
                   </div>
@@ -5446,9 +5510,9 @@ function RealEstateApp({ session, onBack }) {
             {editingPropertyId && (
               <AppModal onClose={() => setEditingPropertyId(null)} overlayStyle={{ zIndex: 39 }} panelStyle={{ bottom: 24 + kbOffset, maxHeight: "75dvh", overflowY: "auto", zIndex: 40 }} scrollable>
                   <div className="text-md" style={{ marginBottom: 14 }}>Modifica</div>
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Nome</div>
                   <input type="text" value={editPropertyName} onChange={(e) => { setEditPropertyName(e.target.value); setEditPropertyError(""); }} autoFocus className="input-field-lg" />
-                  <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 8 }}>Icona</div>
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8, marginBottom: 12 }}>
                     {REALESTATE_ICON_CHOICES.map(({ key, icon: IconComp }) => (
                       <button type="button" key={key} onClick={() => setEditPropertyIcon(key)} aria-label={key} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "var(--radius-md)", cursor: "pointer", border: editPropertyIcon === key ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)", background: editPropertyIcon === key ? "var(--color-bg-tint)" : "#FFFFFF" }}>
@@ -6132,7 +6196,7 @@ function CashflowApp({ session, onBack }) {
                             </div>
                           </div>
                           <div className="mono" style={{ fontSize: "calc(19px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-success)", marginBottom: 4 }}><Money>{fmtEUR(summaryTotals.income)}</Money></div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "calc(10.5px + var(--mobile-font-boost))" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--font-caption)" }}>
                             <span style={{ color: "var(--color-border-light)" }}>vs {summaryComparisonLabel}</span>
                             <span className="mono" style={{ fontWeight: 600, color: incomeChange === null ? "var(--color-border-light)" : (incomeChange >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{incomeChange !== null ? fmtPct(incomeChange) : "—"}</span>
                           </div>
@@ -6146,7 +6210,7 @@ function CashflowApp({ session, onBack }) {
                             </div>
                           </div>
                           <div className="mono" style={{ fontSize: "calc(19px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)", marginBottom: 4 }}><Money>{fmtEUR(summaryTotals.investments)}</Money></div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "calc(10.5px + var(--mobile-font-boost))" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--font-caption)" }}>
                             <span style={{ color: "var(--color-border-light)" }}>vs {summaryComparisonLabel}</span>
                             <span className="mono" style={{ fontWeight: 600, color: "var(--color-primary)" }}>{investChange !== null ? fmtPct(investChange) : "—"}</span>
                           </div>
@@ -6160,7 +6224,7 @@ function CashflowApp({ session, onBack }) {
                             </div>
                           </div>
                           <div className="mono" style={{ fontSize: "calc(19px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-danger)", marginBottom: 4 }}><Money>{fmtEUR(summaryTotals.expenses)}</Money></div>
-                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "calc(10.5px + var(--mobile-font-boost))" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--font-caption)" }}>
                             <span style={{ color: "var(--color-border-light)" }}>vs {summaryComparisonLabel}</span>
                             <span className="mono" style={{ fontWeight: 600, color: expChange === null ? "var(--color-border-light)" : (expChange <= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{expChange !== null ? fmtPct(expChange) : "—"}</span>
                           </div>
@@ -6171,7 +6235,7 @@ function CashflowApp({ session, onBack }) {
                             <span className="text-sm" style={{ color: "var(--color-heading)" }}>Saldo netto</span>
                           </div>
                           <div className="mono" style={{ fontSize: "calc(19px + var(--mobile-font-boost))", fontWeight: 600, color: summaryTotals.netIncome === null ? "var(--color-border-light)" : (summaryTotals.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)"), marginBottom: 4 }}>{summaryTotals.netIncome !== null ? <Money>{fmtEUR(summaryTotals.netIncome)}</Money> : "—"}</div>
-                          <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)" }}>variazione conto</div>
+                          <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)" }}>variazione conto</div>
                         </div>
                       </div>
 
@@ -6183,12 +6247,12 @@ function CashflowApp({ session, onBack }) {
                       <div className="section-label" style={{ textAlign: "left", margin: "12px 0 8px" }}>Il risultato del periodo</div>
                       <div className="card-item" style={{ justifyContent: "space-between", marginBottom: 10 }}>
                         <div>
-                          <div style={{ fontSize: "calc(11px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Risparmiato</div>
+                          <div style={{ fontSize: "var(--font-caption)", fontWeight: 600, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Risparmiato</div>
                           <div className="mono" style={{ fontSize: "calc(24px + var(--mobile-font-boost))", fontWeight: 600, color: summaryTotals.saving === null ? "var(--color-border-light)" : (summaryTotals.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{summaryTotals.saving !== null ? <Money>{summaryTotals.saving > 0 ? "+" : ""}{fmtEUR(summaryTotals.saving)}</Money> : "—"}</div>
-                          {summaryTotals.savingRate !== null && <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginTop: 4 }}>{fmtPct(summaryTotals.savingRate)} delle entrate</div>}
+                          {summaryTotals.savingRate !== null && <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)", marginTop: 4 }}>{fmtPct(summaryTotals.savingRate)} delle entrate</div>}
                         </div>
                         <div style={{ width: 58, height: 58, borderRadius: "50%", background: `conic-gradient(var(--color-success) 0% ${ringPct}%, var(--color-border) ${ringPct}% 100%)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <div className="mono" style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--color-bg-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-heading)" }}>{Math.round(ringPct)}%</div>
+                          <div className="mono" style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--color-bg-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--font-caption)", fontWeight: 700, color: "var(--color-heading)" }}>{Math.round(ringPct)}%</div>
                         </div>
                       </div>
 
@@ -6209,49 +6273,61 @@ function CashflowApp({ session, onBack }) {
                       const disabled = activeAccountId === "all" || idx <= openIdx;
                       const isFuture = idx > todayIdx;
                       const rowOpacity = (activeAccountId !== "all" && idx <= openIdx) ? 0.3 : (isFuture ? 0.55 : 1);
+                      const monthTransfers = transfersForMonth(r.key);
+                      const transferIn = activeAccountId === "all"
+                        ? monthTransfers.reduce((sum, t) => sum + Number(t.amount || 0), 0)
+                        : monthTransfers.filter((t) => t.to_account_id === activeAccountId).reduce((sum, t) => sum + Number(t.amount || 0), 0);
+                      const transferOut = activeAccountId === "all"
+                        ? monthTransfers.reduce((sum, t) => sum + Number(t.amount || 0), 0)
+                        : monthTransfers.filter((t) => t.from_account_id === activeAccountId).reduce((sum, t) => sum + Number(t.amount || 0), 0);
                       return (
-                        <div key={r.key} onClick={() => !disabled && openRow(r.monthIdx)} className="card-item" style={{ flexDirection: "column", alignItems: "stretch", cursor: disabled ? "default" : "pointer", opacity: rowOpacity, flexShrink: 0 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: r.hasEntry ? 10 : 0 }}>
-                            <span className="text-lg" style={{ textTransform: "capitalize" }}>{MESI[r.monthIdx]}</span>
+                        <div key={r.key} onClick={() => !disabled && openRow(r.monthIdx)} className="card-item" style={{ flexDirection: "column", alignItems: "stretch", cursor: disabled ? "default" : "pointer", opacity: rowOpacity, flexShrink: 0, gap: r.hasEntry ? 10 : 0 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                            <span className="text-lg" style={{ textTransform: "capitalize", flex: "1 1 auto" }}>{MESI[r.monthIdx]}</span>
                             {r.hasEntry && (
-                              <div style={{ textAlign: "right", minWidth: 0 }}>
-                                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Saldo conto</div>
-                                <div className="mono" style={{ fontSize: "calc(16px + var(--mobile-font-boost))", fontWeight: 700, color: r.bankBalance === null ? "var(--color-border-light)" : "var(--color-heading)", whiteSpace: "nowrap" }}>
+                              <div style={{ textAlign: "right", minWidth: 0, flex: "0 1 50%" }}>
+                                <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)", marginBottom: 2 }}>Saldo conto</div>
+                                <div className="mono" style={{ fontSize: "calc(15px + var(--mobile-font-boost))", fontWeight: 700, color: r.bankBalance === null ? "var(--color-border-light)" : "var(--color-heading)", overflowWrap: "anywhere" }}>
                                   {r.bankBalance !== null ? <Money>{fmtEUR(r.bankBalance)}</Money> : "—"}
                                 </div>
                               </div>
                             )}
                           </div>
                           {r.hasEntry ? (
-                            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>Entrate</div>
-                                <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-success)", whiteSpace: "nowrap" }}><Money>+{fmtEUR(r.income)}</Money></div>
-                              </div>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>Investito</div>
-                                <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)", whiteSpace: "nowrap" }}><Money>{fmtEUR(r.investments)}</Money></div>
-                              </div>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>Uscite</div>
-                                <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-danger)", whiteSpace: "nowrap" }}><Money>-{fmtEUR(r.expenses)}</Money></div>
-                              </div>
-                              {activeAccountId !== "all" && r.transferNet !== 0 && <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>Trasferimenti</div>
-                                <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color:r.transferNet>0?"var(--color-success)":"var(--color-warning)", whiteSpace:"nowrap" }}><Money>{r.transferNet>0?"+":""}{fmtEUR(r.transferNet)}</Money></div>
-                              </div>}
-                              {r.transferCount > 0 && <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>{activeAccountId === "all" ? "Trasferimenti interni" : "Trasferimenti netti"}</div>
-                                <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight:700, color:activeAccountId === "all" ? "var(--color-primary)" : (r.transferNet >= 0 ? "var(--color-success)" : "var(--color-warning)"), whiteSpace:"nowrap" }}><Money>{activeAccountId === "all" ? fmtEUR(r.transferVolume) : `${r.transferNet>0?"+":""}${fmtEUR(r.transferNet)}`}</Money></div>
-                                {activeAccountId === "all" && <div style={{fontSize:"calc(9.5px + var(--mobile-font-boost))",color:"var(--color-text-secondary)"}}>Impatto totale 0 €</div>}
-                              </div>}
-                              <div style={{ minWidth: 0, textAlign: "right" }}>
-                                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginBottom: 2 }}>Risparmiato</div>
-                                <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)"), whiteSpace: "nowrap" }}>
-                                  {r.saving !== null ? <Money>{r.saving > 0 ? "+" : ""}{fmtEUR(r.saving)}</Money> : "—"}
+                            <>
+                              <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 10 }}>
+                                <div style={{ fontSize: "var(--font-caption)", fontWeight: 700, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 7 }}>Flussi del mese</div>
+                                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                                  {[["Entrate", r.income, "+", "var(--color-success)"], ["Investito", r.investments, "", "var(--color-warning)"], ["Uscite", r.expenses, "-", "var(--color-danger)"]].map(([label, value, sign, color]) => (
+                                    <div key={label} style={{ minWidth: 0 }}>
+                                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)", marginBottom: 2 }}>{label}</div>
+                                      <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 650, color, overflowWrap: "anywhere" }}><Money>{sign}{fmtEUR(value)}</Money></div>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
-                            </div>
+                              <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 10 }}>
+                                <div style={{ fontSize: "var(--font-caption)", fontWeight: 700, color: "var(--color-text-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 7 }}>Risultato e trasferimenti</div>
+                                <div style={{ display: "grid", gridTemplateColumns: monthTransfers.length > 0 ? "repeat(3, minmax(0, 1fr))" : "1fr", gap: 8 }}>
+                                  <div style={{ minWidth: 0 }}>
+                                    <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)", marginBottom: 2 }}>Risparmiato</div>
+                                    <div className="mono" style={{ fontSize: "calc(13.5px + var(--mobile-font-boost))", fontWeight: 700, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)"), overflowWrap: "anywhere" }}>
+                                      {r.saving !== null ? <Money>{r.saving > 0 ? "+" : ""}{fmtEUR(r.saving)}</Money> : "—"}
+                                    </div>
+                                  </div>
+                                  {monthTransfers.length > 0 && <>
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)", marginBottom: 2 }}>Trasf. in entrata</div>
+                                      <div className="mono" style={{ fontSize: "calc(13.5px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-success)", overflowWrap: "anywhere" }}><Money>+{fmtEUR(transferIn)}</Money></div>
+                                    </div>
+                                    <div style={{ minWidth: 0 }}>
+                                      <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)", marginBottom: 2 }}>Trasf. in uscita</div>
+                                      <div className="mono" style={{ fontSize: "calc(13.5px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-warning)", overflowWrap: "anywhere" }}><Money>-{fmtEUR(transferOut)}</Money></div>
+                                    </div>
+                                  </>}
+                                </div>
+                              </div>
+                            </>
                           ) : (
                             <div style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", color: "var(--color-border-light)" }}>Nessun dato per questo mese</div>
                           )}
@@ -6264,7 +6340,7 @@ function CashflowApp({ session, onBack }) {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, marginBottom: 10 }}>
                       <span className="text-lg" style={{ color: "#FFFFFF" }}>Totale {summaryPeriodLabel}</span>
                       <div style={{ textAlign: "right", minWidth: 0 }}>
-                        <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Saldo conto</div>
+                        <div style={{ fontSize: "var(--font-caption)", color: "rgba(255,255,255,0.65)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Saldo conto</div>
                         <div className="mono" style={{ fontSize: "calc(16px + var(--mobile-font-boost))", fontWeight: 700, color: "#FFFFFF", whiteSpace: "nowrap" }}>
                           {summaryTotals.finalBalance !== null ? <Money>{fmtEUR(summaryTotals.finalBalance)}</Money> : "—"}
                         </div>
@@ -6272,19 +6348,19 @@ function CashflowApp({ session, onBack }) {
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 6 }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Entrate</div>
+                        <div style={{ fontSize: "var(--font-caption)", color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Entrate</div>
                         <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "#FFFFFF", whiteSpace: "nowrap" }}><Money>+{fmtEUR(summaryTotals.income)}</Money></div>
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Investito</div>
+                        <div style={{ fontSize: "var(--font-caption)", color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Investito</div>
                         <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "#FFFFFF", whiteSpace: "nowrap" }}><Money>{fmtEUR(summaryTotals.investments)}</Money></div>
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Uscite</div>
+                        <div style={{ fontSize: "var(--font-caption)", color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Uscite</div>
                         <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "#FFFFFF", whiteSpace: "nowrap" }}><Money>-{fmtEUR(summaryTotals.expenses)}</Money></div>
                       </div>
                       <div style={{ minWidth: 0, textAlign: "right" }}>
-                        <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Risparmiato</div>
+                        <div style={{ fontSize: "var(--font-caption)", color: "rgba(255,255,255,0.55)", marginBottom: 2 }}>Risparmiato</div>
                         <div className="mono" style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color: summaryTotals.saving >= 0 ? "var(--color-success)" : "#FFB4A8", whiteSpace: "nowrap" }}>
                           <Money>{summaryTotals.saving > 0 ? "+" : ""}{fmtEUR(summaryTotals.saving)}</Money>
                         </div>
@@ -6348,7 +6424,7 @@ function CashflowApp({ session, onBack }) {
                           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", margin: "4px 0 8px" }}>
                             <div className="section-label" style={{ textAlign: "left", margin: 0 }}>I tuoi movimenti</div>
                             {!editDisabled && (
-                              <button onClick={() => openRow(r.monthIdx, monthCursor.year)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-bg-tint)", color: "var(--color-primary)", fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>
+                              <button onClick={() => openRow(r.monthIdx, monthCursor.year)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: "var(--radius-pill)", border: "none", background: "var(--color-bg-tint)", color: "var(--color-primary)", fontSize: "var(--font-caption)", fontWeight: 600, cursor: "pointer" }}>
                                 <Pencil size={11} /> Modifica
                               </button>
                             )}
@@ -6362,7 +6438,7 @@ function CashflowApp({ session, onBack }) {
                                 </div>
                               </div>
                               <div className="mono" style={{ fontSize: "calc(19px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-success)", marginBottom: 4 }}><Money>{fmtEUR(r.income)}</Money></div>
-                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "calc(10.5px + var(--mobile-font-boost))" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--font-caption)" }}>
                                 <span style={{ color: "var(--color-border-light)" }}>vs mese prec.</span>
                                 <span className="mono" style={{ fontWeight: 600, color: incomeChange === null ? "var(--color-border-light)" : (incomeChange >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{incomeChange !== null ? fmtPct(incomeChange) : "—"}</span>
                               </div>
@@ -6376,7 +6452,7 @@ function CashflowApp({ session, onBack }) {
                                 </div>
                               </div>
                               <div className="mono" style={{ fontSize: "calc(19px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)", marginBottom: 4 }}><Money>{fmtEUR(r.investments)}</Money></div>
-                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "calc(10.5px + var(--mobile-font-boost))" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--font-caption)" }}>
                                 <span style={{ color: "var(--color-border-light)" }}>vs mese prec.</span>
                                 <span className="mono" style={{ fontWeight: 600, color: "var(--color-primary)" }}>{investChange !== null ? fmtPct(investChange) : "—"}</span>
                               </div>
@@ -6390,7 +6466,7 @@ function CashflowApp({ session, onBack }) {
                                 </div>
                               </div>
                               <div className="mono" style={{ fontSize: "calc(19px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-danger)", marginBottom: 4 }}><Money>{fmtEUR(r.expenses)}</Money></div>
-                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "calc(10.5px + var(--mobile-font-boost))" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--font-caption)" }}>
                                 <span style={{ color: "var(--color-border-light)" }}>vs mese prec.</span>
                                 <span className="mono" style={{ fontWeight: 600, color: expChange === null ? "var(--color-border-light)" : (expChange <= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{expChange !== null ? fmtPct(expChange) : "—"}</span>
                               </div>
@@ -6401,19 +6477,19 @@ function CashflowApp({ session, onBack }) {
                                 <span className="text-sm" style={{ color: "var(--color-heading)" }}>Saldo netto</span>
                               </div>
                               <div className="mono" style={{ fontSize: "calc(19px + var(--mobile-font-boost))", fontWeight: 600, color: r.netIncome === null ? "var(--color-border-light)" : (r.netIncome >= 0 ? "var(--color-success)" : "var(--color-danger)"), marginBottom: 4 }}>{r.netIncome !== null ? <Money>{fmtEUR(r.netIncome)}</Money> : "—"}</div>
-                              <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", color: "var(--color-border-light)" }}>variazione conto</div>
+                              <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)" }}>variazione conto</div>
                             </div>
                           </div>
 
                           <div className="section-label" style={{ textAlign: "left", margin: "4px 0 8px" }}>Il risultato del mese</div>
                           <div className="card-item" style={{ justifyContent: "space-between" }}>
                             <div>
-                              <div style={{ fontSize: "calc(11px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Risparmiato</div>
+                              <div style={{ fontSize: "var(--font-caption)", fontWeight: 600, color: "var(--color-border-light)", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>Risparmiato</div>
                               <div className="mono" style={{ fontSize: "calc(24px + var(--mobile-font-boost))", fontWeight: 600, color: r.saving === null ? "var(--color-border-light)" : (r.saving >= 0 ? "var(--color-success)" : "var(--color-danger)") }}>{r.saving !== null ? <Money>{r.saving > 0 ? "+" : ""}{fmtEUR(r.saving)}</Money> : "—"}</div>
-                              {r.savingRate !== null && <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-border-light)", marginTop: 4 }}>{fmtPct(r.savingRate)} delle entrate</div>}
+                              {r.savingRate !== null && <div style={{ fontSize: "var(--font-caption)", color: "var(--color-border-light)", marginTop: 4 }}>{fmtPct(r.savingRate)} delle entrate</div>}
                             </div>
                             <div style={{ width: 58, height: 58, borderRadius: "50%", background: `conic-gradient(var(--color-success) 0% ${ringPct}%, var(--color-border) ${ringPct}% 100%)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <div className="mono" style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--color-bg-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-heading)" }}>{Math.round(ringPct)}%</div>
+                              <div className="mono" style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--color-bg-tint)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--font-caption)", fontWeight: 700, color: "var(--color-heading)" }}>{Math.round(ringPct)}%</div>
                             </div>
                           </div>
                         </div>
@@ -6447,21 +6523,21 @@ function CashflowApp({ session, onBack }) {
       {editingMonthKey && (
         <AppModal onClose={() => setEditingMonthKey(null)} overlayStyle={{ zIndex: 39 }} panelStyle={{ maxHeight: "82dvh", overflowY: "auto", zIndex: 40 }} scrollable>
             <div className="text-md" style={{ marginBottom: 4, textTransform: "capitalize" }}>{fmtMonthYear(editingMonthKey)}</div>
-            <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", color: "var(--color-primary)", marginBottom: 14 }}>
+            <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)", marginBottom: 14 }}>
               Saldo inizio mese: {prevBalanceForEditing !== null ? <Money>{fmtEUR(prevBalanceForEditing)}</Money> : "non disponibile"}
             </div>
 
             <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Entrate</div>
+                <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Entrate</div>
                 <input type="text" inputMode="decimal" placeholder="0,00" value={rowForm.income} onChange={(e) => setRowForm({ ...rowForm, income: e.target.value })} className="mono" style={{ width: "100%", boxSizing: "border-box", padding: "9px 8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)", fontSize: "calc(14px + var(--mobile-font-boost))", background: "var(--color-surface)" }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Investimenti</div>
+                <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Investimenti</div>
                 <input type="text" inputMode="decimal" placeholder="0,00" value={rowForm.investments} onChange={(e) => setRowForm({ ...rowForm, investments: e.target.value })} className="mono" style={{ width: "100%", boxSizing: "border-box", padding: "9px 8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)", fontSize: "calc(14px + var(--mobile-font-boost))", background: "var(--color-surface)" }} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Spese</div>
+                <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Spese</div>
                 <input type="text" inputMode="decimal" placeholder="0,00" value={rowForm.expenses} onChange={(e) => setRowForm({ ...rowForm, expenses: e.target.value })} className="mono" style={{ width: "100%", boxSizing: "border-box", padding: "9px 8px", borderRadius: "var(--radius-sm)", border: "1px solid var(--color-border)", fontSize: "calc(14px + var(--mobile-font-boost))", background: "var(--color-surface)" }} />
               </div>
             </div>
@@ -6475,7 +6551,7 @@ function CashflowApp({ session, onBack }) {
               </div>
               {cfCarryForward && (
                 <div className="fade-in" style={{ marginTop: 10 }}>
-                  <div style={{ fontSize: "calc(10.5px + var(--mobile-font-boost))", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Fino a</div>
+                  <div style={{ fontSize: "var(--font-caption)", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-primary)", fontWeight: 600, marginBottom: 6 }}>Fino a</div>
                   <input type="month" value={cfCarryUntil} min={editingMonthKey} onChange={(e) => setCfCarryUntil(e.target.value)} className="input-month" style={{ marginBottom: 10 }} />
                   <div onClick={() => setCfOverwriteExisting(!cfOverwriteExisting)} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", marginBottom: 8 }}>
                     <div style={{ width: 16, height: 16, borderRadius: 4, border: cfOverwriteExisting ? "1.5px solid var(--color-primary)" : "1.5px solid var(--color-border)", background: cfOverwriteExisting ? "var(--color-primary)" : "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -6483,7 +6559,7 @@ function CashflowApp({ session, onBack }) {
                     </div>
                     <span style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", color: "var(--color-heading)" }}>Sovrascrivi mesi che hanno già dei valori</span>
                   </div>
-                  <div style={{ fontSize: "calc(11.5px + var(--mobile-font-boost))", color: "var(--color-primary)" }}>Entrate, investimenti e spese verranno ripetuti su ogni mese fino a quello scelto (incluso). Potrai comunque modificare il risultato di un singolo mese in seguito.</div>
+                  <div style={{ fontSize: "var(--font-caption)", color: "var(--color-primary)" }}>Entrate, investimenti e spese verranno ripetuti su ogni mese fino a quello scelto (incluso). Potrai comunque modificare il risultato di un singolo mese in seguito.</div>
                 </div>
               )}
             </div>
@@ -6494,11 +6570,11 @@ function CashflowApp({ session, onBack }) {
                 <div className="section-label">Bank Account</div>
                 {prevBalanceForEditing !== null && (
                   rowMode === "auto" ? (
-                    <button type="button" onClick={requestManualOverride} style={{ background: "none", border: "none", color: "var(--color-primary)", fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+                    <button type="button" onClick={requestManualOverride} style={{ background: "none", border: "none", color: "var(--color-primary)", fontSize: "var(--font-caption)", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
                       <Pencil size={12} /> Modifica manualmente
                     </button>
                   ) : (
-                    <button type="button" onClick={revertToAuto} style={{ background: "none", border: "none", color: "var(--color-primary)", fontSize: "calc(12px + var(--mobile-font-boost))", fontWeight: 600, cursor: "pointer" }}>
+                    <button type="button" onClick={revertToAuto} style={{ background: "none", border: "none", color: "var(--color-primary)", fontSize: "var(--font-caption)", fontWeight: 600, cursor: "pointer" }}>
                       Calcola automaticamente
                     </button>
                   )
@@ -6511,7 +6587,7 @@ function CashflowApp({ session, onBack }) {
               ) : (
                 <>
                   {prevBalanceForEditing === null && (
-                    <div style={{ fontSize: "calc(12px + var(--mobile-font-boost))", color: "var(--color-warning)", marginBottom: 8, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.4 }}>
+                    <div style={{ fontSize: "var(--font-caption)", color: "var(--color-warning)", marginBottom: 8, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.4 }}>
                       <AlertTriangle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
                       Il saldo del mese precedente non è disponibile: inserisci qui il saldo di questo mese per continuare la serie.
                     </div>
