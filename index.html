@@ -81,8 +81,29 @@
   --font-caption: calc(13px + var(--mobile-font-boost));
   --font-body: calc(15px + var(--mobile-font-boost));
   --font-amount: calc(16px + var(--mobile-font-boost));
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --ease-ui: cubic-bezier(0.22, 1, 0.36, 1);
+  --shadow-card: 0 2px 8px rgba(5,91,101,0.07);
+  --shadow-elevated: 0 14px 36px rgba(5,91,101,0.22);
+  --icon-size-sm: 16px;
+  --icon-size-md: 20px;
+  --icon-size-lg: 24px;
 }
 * { box-sizing: border-box; }
+/* GUI-11/14 - motion, elevation, icons and empty states */
+.ui-surface-card, .card-item, .asset-list-card { border:1px solid var(--color-border); box-shadow:var(--shadow-card); }
+.app-modal-panel { box-shadow:var(--shadow-elevated) !important; }
+.btn-icon svg, .app-header-icon-button svg { width:var(--icon-size-md); height:var(--icon-size-md); stroke-width:2; }
+.btn-icon[style*="color: var(--color-danger)"] svg, .btn-icon[style*="color:"var(--color-danger)""] svg { stroke:var(--color-danger); }
+.ui-empty-state { padding:28px 18px; text-align:center; color:var(--color-text-secondary); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; min-height:132px; }
+.ui-empty-state-icon { width:42px; height:42px; border-radius:50%; display:grid; place-items:center; margin-bottom:3px; color:var(--color-primary); background:var(--color-bg-tint); border:1px solid var(--color-border); }
+.ui-empty-state-title { color:var(--color-heading); font-size:var(--font-body); font-weight:700; line-height:1.25; }
+.ui-empty-state-description { max-width:320px; font-size:var(--font-caption); line-height:1.45; }
+.ui-empty-state-action { margin-top:8px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior:auto !important; animation-duration:0.01ms !important; animation-iteration-count:1 !important; transition-duration:0.01ms !important; transition-delay:0ms !important; }
+}
 .section-label { font-size: calc(11px + var(--mobile-font-boost)); letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-primary); font-weight: 600; }
 .btn-primary,
 .btn-outline,
@@ -92,7 +113,7 @@
 .btn-icon {
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, opacity 140ms ease, transform 100ms ease, box-shadow 140ms ease;
+  transition: background-color var(--motion-fast) var(--ease-ui), border-color var(--motion-fast) var(--ease-ui), color var(--motion-fast) var(--ease-ui), opacity var(--motion-fast) var(--ease-ui), transform var(--motion-fast) var(--ease-ui), box-shadow var(--motion-fast) var(--ease-ui);
 }
 .btn-primary,
 .btn-outline,
@@ -197,7 +218,7 @@ button[aria-busy="true"] { position: relative; }
   position: relative; display: flex; align-items: center; gap: 9px;
   min-height: 88px; padding: 10px 11px; border: 1px solid var(--color-border);
   border-radius: var(--radius-lg); background: var(--color-surface);
-  box-shadow: 0 2px 8px rgba(5,91,101,0.055);
+  box-shadow: var(--shadow-card);
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 .asset-list-card[data-clickable="true"] { cursor: pointer; }
@@ -221,10 +242,10 @@ button[aria-busy="true"] { position: relative; }
 }
 .asset-list-value { min-width: 0; font-size: var(--font-amount); font-weight: 700; color: var(--color-heading); white-space: nowrap; text-align: right; }
 .asset-list-return { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 8px; margin-top: 5px; }
-.asset-list-return-label { font-size: var(--font-caption); color: var(--color-primary); }
+.asset-list-return-label { font-size: var(--font-caption); color: var(--color-text); }
 .asset-list-gain { min-width: 0; font-size: var(--font-caption); font-weight: 400; white-space: nowrap; text-align: right; }
 .asset-list-footer { display: grid; grid-template-columns: minmax(0, 1fr) 82px; align-items: end; gap: 8px; margin-top: 4px; }
-.asset-list-weight { min-width: 0; font-size: var(--font-caption); color: var(--color-primary); }
+.asset-list-weight { min-width: 0; font-size: var(--font-caption); color: var(--color-text-secondary); }
 .asset-list-trend { display: flex; align-items: center; justify-content: flex-end; min-width: 82px; }
 .asset-list-chevron { flex-shrink: 0; margin-left: -4px; }
 .asset-list-empty { margin-top: 5px; font-size: var(--font-caption); line-height: 1.35; color: var(--color-border-light); }
@@ -335,14 +356,17 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--color
   -webkit-backdrop-filter: blur(2px);
 }
 .app-modal-panel {
+  --modal-keyboard-offset: 0px;
   padding: 20px !important;
   border: 1px solid rgba(69, 130, 139, 0.14);
   border-radius: 18px !important;
-  box-shadow: 0 20px 48px rgba(5, 91, 101, 0.26) !important;
-  max-height: min(78dvh, 680px) !important;
+  box-shadow: var(--shadow-elevated) !important;
+  max-height: min(calc(100dvh - var(--modal-keyboard-offset) - 32px), 680px) !important;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  scrollbar-gutter: stable;
 }
 .app-modal-panel > .text-md:first-child {
   font-size: calc(18px + var(--mobile-font-boost));
@@ -383,16 +407,17 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--color
   .app-modal-panel {
     left: 0 !important;
     right: 0 !important;
-    bottom: 0 !important;
+    bottom: var(--modal-keyboard-offset) !important;
     width: 100% !important;
     max-width: none !important;
-    max-height: min(88dvh, 760px) !important;
+    max-height: min(calc(100dvh - var(--modal-keyboard-offset) - 8px), 760px) !important;
     margin: 0 !important;
     padding: 20px 18px calc(18px + env(safe-area-inset-bottom)) !important;
     border-left: none;
     border-right: none;
     border-bottom: none;
     border-radius: 22px 22px 0 0 !important;
+    transform: translateZ(0);
   }
   .app-modal-panel::before {
     content: "";
@@ -451,15 +476,33 @@ input:focus, select:focus, button:focus-visible { outline: 2px solid var(--color
   border: 1px solid var(--color-border);
 }
 .modal-actions {
+  position: sticky;
+  bottom: calc(-18px - env(safe-area-inset-bottom));
+  z-index: 4;
   display: flex;
   gap: 8px;
   align-items: stretch;
+  margin-left: -18px;
+  margin-right: -18px;
+  padding: 10px 18px calc(18px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface) 96%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .modal-actions-spaced { margin-bottom: 8px; }
 .modal-actions > button {
   flex: 1;
   min-width: 0;
   min-height: 46px;
+}
+@media (min-width: 601px) {
+  .modal-actions {
+    bottom: -20px;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding: 10px 20px 20px;
+  }
 }
 @media (max-width: 360px) {
   .modal-actions { gap: 6px; }
@@ -805,7 +848,22 @@ html[data-theme="dark"] .cozy-profile-card { background:linear-gradient(145deg,#
 html[data-theme="dark"] .cozy-avatar { box-shadow:0 8px 22px rgba(0,0,0,.38),0 0 0 4px #1A1F1E,0 0 0 6px #2E7D69; }
 html[data-theme="dark"] .cozy-avatar-mini { box-shadow:0 0 0 2px #1A1F1E,0 0 0 3px #2A3331; }
 html[data-theme="dark"] .cozy-avatar-choice.selected { background:#1F3F36; box-shadow:0 0 0 2px #4CAF88; }
-html[data-theme="dark"] .cozy-avatar-choice.selected::after { background:#2E7D69; color:#F5F6F7; }
+html[data-theme="dark"] .chart-legend-list { flex:1 1 210px; min-width:0; }
+.chart-legend-item { display:grid; grid-template-columns:12px minmax(0,1fr) auto; gap:8px; align-items:center; padding:8px; border-radius:9px; cursor:pointer; }
+.chart-legend-name { min-width:0; white-space:normal; overflow-wrap:anywhere; line-height:1.25; font-size:var(--font-caption); }
+.chart-legend-value { font-size:var(--font-caption); text-align:right; font-weight:600; white-space:nowrap; }
+@media (max-width:390px) {
+  .chart-legend-list { flex-basis:100%; width:100%; }
+  .chart-legend-item { grid-template-columns:12px minmax(0,1fr) auto; padding:7px 4px; }
+  .chart-legend-value { font-size:calc(12px + var(--mobile-font-boost)); }
+}
+.cozy-profile-name { min-width:0; overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; white-space:normal; overflow-wrap:anywhere; line-height:1.2; }
+.cozy-avatar-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(66px,1fr)); gap:13px 10px; justify-items:center; align-items:center; }
+@media (max-width:360px) {
+  .cozy-avatar-grid { grid-template-columns:repeat(auto-fit,minmax(60px,1fr)); gap:11px 8px; }
+  .cozy-avatar-grid .cozy-avatar-mini { width:54px !important; height:54px !important; }
+}
+.cozy-avatar-choice.selected::after { background:#2E7D69; color:#F5F6F7; }
 html[data-theme="dark"] .cozy-swatch { box-shadow:inset 0 0 0 1px rgba(245,246,247,.18); }
 html[data-theme="dark"] .auth-shell { background:linear-gradient(180deg,#141A18 0%,#0F1413 48%); }
 html[data-theme="dark"] .brand-lockup { color:#F5F6F7; }
@@ -826,11 +884,13 @@ html[data-theme="dark"] .btn-primary {
   box-shadow:0 5px 14px rgba(0,0,0,.24);
 }
 html[data-theme="dark"] .btn-primary:hover { background:#367D6A !important; }
-html[data-theme="dark"] .btn-primary:disabled {
-  background:#26302D !important;
-  color:#7F8A86 !important;
-  border-color:#394440 !important;
-  box-shadow:none;
+html[data-theme="dark"] .btn-primary:disabled,
+html[data-theme="dark"] .btn-primary[aria-busy="true"] {
+  background:rgba(69,130,139,0.20) !important;
+  color:rgba(224,229,233,0.62) !important;
+  border-color:rgba(178,201,197,0.24) !important;
+  box-shadow:none !important;
+  opacity:1;
 }
 html[data-theme="dark"] .hub-item-icon-investments {
   background:#1F3F36 !important;
@@ -841,7 +901,7 @@ html[data-theme="dark"] .hub-item-icon-investments svg {
   stroke:#4CAF88 !important;
 }
 html[data-theme="dark"] .nw-hero-card {
-  background:linear-gradient(145deg,#173A32 0%,#245D4F 100%) !important;
+  background:linear-gradient(145deg,#17594E 0%,#247D6B 100%) !important;
   color:#F5F6F7 !important;
   border:1px solid rgba(76,175,136,.42);
   box-shadow:0 12px 30px rgba(0,0,0,.34) !important;
@@ -1171,6 +1231,16 @@ function SummaryStrip({ label, value, meta = null, color = "var(--color-heading)
     <div className="ui-summary-strip">
       <div className="ui-summary-strip-top"><span>{label}</span>{meta !== null && <span className="ui-summary-strip-meta">{meta}</span>}</div>
       <div className="mono ui-summary-strip-value" style={{ color }}>{value}</div>
+    </div>
+  );
+}
+function EmptyState({ title = "Nessun dato disponibile", description = null, actionLabel = null, onAction = null, icon: Icon = CircleEllipsis }) {
+  return (
+    <div className="ui-empty-state" role="status">
+      <div className="ui-empty-state-icon"><Icon size={22} strokeWidth={1.9} aria-hidden="true" /></div>
+      <div className="ui-empty-state-title">{title}</div>
+      {description && <div className="ui-empty-state-description">{description}</div>}
+      {actionLabel && onAction && <button type="button" className="btn-primary ui-empty-state-action" onClick={onAction}>{actionLabel}</button>}
     </div>
   );
 }
@@ -2918,7 +2988,28 @@ function PerformanceChart({ months, primary, secondary, primaryLabel="Rendimento
   const pick=e=>{const r=ref.current.getBoundingClientRect();setActive(Math.max(0,Math.min(months.length-1,Math.round((((e.clientX-r.left)/r.width*w)-p.l)/((w-p.l-p.r)/(months.length-1))))))};
   return <div><div style={{display:"flex",justifyContent:"center",gap:16,fontSize: "var(--font-caption)",fontWeight:600,marginBottom:5,flexWrap:"wrap"}}><span>━ {primaryLabel}</span>{secondary&&<span style={{color:"#9B6CB5"}}>━ {secondaryLabel}</span>}</div><svg ref={ref} viewBox={`0 0 ${w} ${h}`} style={{width:"100%",touchAction:"none"}} onPointerDown={e=>{e.currentTarget.setPointerCapture?.(e.pointerId);pick(e)}} onPointerMove={e=>active!==null&&pick(e)} onPointerUp={()=>setActive(null)} onPointerLeave={()=>setActive(null)}>{[0,.5,1].map(q=>{const v=min+(max-min)*q;return <g key={q}><line x1={p.l} x2={w-p.r} y1={y(v)} y2={y(v)} stroke="var(--color-border)" strokeDasharray="3 4"/><text x={p.l-6} y={y(v)+4} textAnchor="end" fontSize="10" fill="var(--color-border-light)">{v.toFixed(0)}%</text></g>})}<line x1={p.l} x2={w-p.r} y1={y(0)} y2={y(0)} stroke="var(--color-heading)" opacity=".25"/><path d={`${path(primary)} L ${x(primary.length-1)} ${y(0)} L ${x(0)} ${y(0)} Z`} fill="var(--color-primary)" opacity=".07"/><path d={path(primary)} fill="none" stroke="var(--color-primary)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>{secondary&&<path d={path(secondary)} fill="none" stroke="#B98CD1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>}{months.map((m,i)=>(i%Math.max(1,Math.ceil(months.length/6))===0||i===months.length-1)?<text key={m} x={x(i)} y={h-7} textAnchor={i===0?'start':i===months.length-1?'end':'middle'} fontSize="10" fill="var(--color-primary)">{fmtMonthYear(m)}</text>:null)}{active!==null&&<g pointerEvents="none"><line x1={x(active)} x2={x(active)} y1={p.t} y2={h-p.b} stroke="var(--color-heading)" strokeDasharray="3 3"/><rect x={Math.max(3,Math.min(w-184,x(active)-88))} y="3" width="181" height={secondary?61:45} rx="10" fill="#fff" stroke="var(--color-border)"/><text x={Math.max(13,Math.min(w-174,x(active)-78))} y="18" fontSize="10" fontWeight="700">{fmtMonthYear(months[active])}</text><text x={Math.max(13,Math.min(w-174,x(active)-78))} y="35" fontSize="10" fill="var(--color-primary)">{primaryLabel}: {fmtPct(primary[active])}</text>{secondary&&<text x={Math.max(13,Math.min(w-174,x(active)-78))} y="51" fontSize="10" fill="#9B6CB5">{secondaryLabel}: {fmtPct(secondary[active])}</text>}</g>}</svg></div>;
 }
-function PortfolioPieChart({ rows, activeId, setActiveId }) { const size=170,stroke=28,r=(size-stroke)/2,c=size/2,circ=2*Math.PI*r;let acc=0;const selected=rows.find(x=>x.id===activeId),total=rows.reduce((a,b)=>a+b.value,0);return <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}><circle cx={c} cy={c} r={r} fill="none" stroke="var(--color-bg-tint)" strokeWidth={stroke}/><g transform={`rotate(-90 ${c} ${c})`}>{rows.map((row,i)=>{const dash=row.pct/100*circ,off=-acc/100*circ;acc+=row.pct;return <circle key={row.id} cx={c} cy={c} r={r} fill="none" stroke={PIE_COLORS[i%PIE_COLORS.length]} strokeWidth={activeId===row.id?stroke+6:stroke} strokeDasharray={`${dash} ${circ-dash}`} strokeDashoffset={off} opacity={!activeId||activeId===row.id?1:.25} onClick={()=>setActiveId(activeId===row.id?null:row.id)} style={{cursor:"pointer",transition:"all .18s"}}/>})}</g><text x={c} y={c-8} textAnchor="middle" fontSize="10" fill="var(--color-border-light)">{selected?selected.name:"Totale"}</text><text x={c} y={c+10} textAnchor="middle" fontSize="13" fontWeight="700" fill="var(--color-heading)">{fmtEUR(selected?selected.value:total)}</text>{selected&&<text x={c} y={c+26} textAnchor="middle" fontSize="10" fontWeight="700" fill="var(--color-primary)">{selected.pct.toFixed(1)}%</text>}</svg>;}
+function PortfolioPieChart({ rows, activeId, setActiveId }) {
+  const size = 170, stroke = 28, r = (size - stroke) / 2, c = size / 2, circ = 2 * Math.PI * r;
+  let acc = 0;
+  const selected = rows.find((x) => x.id === activeId);
+  const total = rows.reduce((a, b) => a + b.value, 0);
+  const centerName = selected ? selected.name : "Totale";
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={selected ? `${selected.name}: ${fmtEUR(selected.value)}, ${selected.pct.toFixed(1)}%` : `Composizione totale: ${fmtEUR(total)}`}>
+      <circle cx={c} cy={c} r={r} fill="none" stroke="var(--color-bg-tint)" strokeWidth={stroke} />
+      <g transform={`rotate(-90 ${c} ${c})`}>
+        {rows.map((row, i) => {
+          const dash = row.pct / 100 * circ, off = -acc / 100 * circ;
+          acc += row.pct;
+          return <circle key={row.id} cx={c} cy={c} r={r} fill="none" stroke={PIE_COLORS[i % PIE_COLORS.length]} strokeWidth={activeId === row.id ? stroke + 6 : stroke} strokeDasharray={`${dash} ${circ - dash}`} strokeDashoffset={off} opacity={!activeId || activeId === row.id ? 1 : .25} onClick={() => setActiveId(activeId === row.id ? null : row.id)} style={{ cursor: "pointer", transition: "all .18s" }}><title>{`${row.name}: ${fmtEUR(row.value)} · ${row.pct.toFixed(1)}%`}</title></circle>;
+        })}
+      </g>
+      <text x={c} y={c - 8} textAnchor="middle" fontSize="12" fill="var(--color-border-light)"><title>{centerName}</title>{centerName.length > 15 ? `${centerName.slice(0, 14)}…` : centerName}</text>
+      <text x={c} y={c + 11} textAnchor="middle" fontSize="13" fontWeight="700" fill="var(--color-heading)">{fmtEUR(selected ? selected.value : total)}</text>
+      {selected && <text x={c} y={c + 28} textAnchor="middle" fontSize="12" fontWeight="600" fill="var(--color-primary)">{selected.pct.toFixed(1)}%</text>}
+    </svg>
+  );
+}
 function sumLatestValuationAsOf(items, valuations, itemIdField, cutoffFullDate) {
   const map = {};
   valuations.forEach((v) => {
@@ -3191,7 +3282,7 @@ function ProfileApp({ session, onBack, themePreference, onThemePreferenceChange 
                 </button>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize: "var(--font-caption)",color:"var(--color-primary)",fontWeight:700,letterSpacing:".07em",textTransform:"uppercase"}}>Il tuo spazio Cozy</div>
-                  <div style={{fontSize: "calc(22px + var(--mobile-font-boost))",fontWeight:800,color:"var(--color-heading)",marginTop:3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{fullName || "Cozy Explorer"}</div>
+                  <div className="cozy-profile-name" style={{fontSize: "calc(22px + var(--mobile-font-boost))",fontWeight:800,color:"var(--color-heading)",marginTop:3}}>{fullName || "Cozy Explorer"}</div>
                   <div style={{fontSize: "calc(12.5px + var(--mobile-font-boost))",color:"var(--color-primary)",marginTop:3}}>Avatar sincronizzato tra i tuoi dispositivi.</div>
                 </div>
               </div>
@@ -3199,7 +3290,7 @@ function ProfileApp({ session, onBack, themePreference, onThemePreferenceChange 
 
             <button onClick={() => { setNameInput(fullName); setNameError(""); setView("name"); }} style={{ width:"100%",display:"flex",alignItems:"center",gap:14,padding:"15px 14px",borderRadius:"var(--radius-lg)",border:"1px solid var(--color-border)",background:"var(--color-surface)",cursor:"pointer",marginBottom:10,textAlign:"left" }}>
               <div style={{width:38,height:38,borderRadius:14,background:"var(--color-bg-tint)",display:"grid",placeItems:"center",fontWeight:800,color:"var(--color-heading)"}}>Aa</div>
-              <div style={{flex:1,minWidth:0}}><div style={{fontSize: "calc(15.5px + var(--mobile-font-boost))",fontWeight:600}}>Nome utente</div><div style={{fontSize: "calc(12.5px + var(--mobile-font-boost))",color:"var(--color-primary)",marginTop:1}}>{fullName || "Non impostato"}</div></div><ChevronRight size={16} color="var(--color-border-light)" />
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize: "calc(15.5px + var(--mobile-font-boost))",fontWeight:600}}>Nome utente</div><div className="cozy-profile-name" style={{fontSize: "calc(12.5px + var(--mobile-font-boost))",color:"var(--color-primary)",marginTop:1}}>{fullName || "Non impostato"}</div></div><ChevronRight size={16} color="var(--color-border-light)" />
             </button>
 
             <button onClick={() => setView("avatar")} style={{ width:"100%",display:"flex",alignItems:"center",gap:14,padding:"15px 14px",borderRadius:"var(--radius-lg)",border:"1px solid var(--color-border)",background:"var(--color-surface)",cursor:"pointer",marginBottom:10,textAlign:"left" }}>
@@ -3224,7 +3315,7 @@ function ProfileApp({ session, onBack, themePreference, onThemePreferenceChange 
         {view === "avatar" && (
           <div className="fade-in" style={{overflowY:"auto",padding:"4px 3px 18px"}}>
             <div style={{fontSize: "calc(13px + var(--mobile-font-boost))",color:"var(--color-primary)",lineHeight:1.5,marginBottom:15}}>Scegli l'illustrazione che ti rappresenta. La prima icona mantiene il simbolo Cozy Tracker.</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:13,justifyItems:"center"}}>
+            <div className="cozy-avatar-grid">
               {Array.from({length:21},(_,idx)=><button key={idx} onClick={()=>chooseAvatar(idx)} disabled={avatarSaveState==="saving"} className={`cozy-avatar-choice ${avatarIndex===idx?"selected":""}`} aria-label={`Avatar ${idx+1}`}><div className="cozy-avatar-mini" style={{...avatarStyle(idx),width:58,height:58}} /></button>)}
             </div>
             {(avatarSaveState === "loading" || avatarSaveMessage) && (
@@ -3552,7 +3643,7 @@ function NetWorthApp({ session, onBack }) {
     const cardStyle = {
       padding: hero ? 16 : 12,
       borderRadius: "var(--radius-xl)",
-      background: hero ? "linear-gradient(145deg, var(--color-heading), var(--color-primary))" : "var(--color-bg-tint)",
+      background: hero ? "linear-gradient(145deg, #0B6870 0%, #2D9481 100%)" : "var(--color-bg-tint)",
       color: hero ? "#FFFFFF" : "var(--color-heading)",
       boxShadow: hero ? "0 8px 20px rgba(5,91,101,0.14)" : "none",
       minWidth: 0,
@@ -3563,7 +3654,7 @@ function NetWorthApp({ session, onBack }) {
     const variationValue = <><Money>{netWorthPeriodDelta > 0 ? "+" : ""}{fmtEUR(netWorthPeriodDelta)}</Money>{netWorthPeriodDeltaPct !== null ? ` · ${fmtPct(netWorthPeriodDeltaPct)}` : ""}</>;
     const row = (label, value, color, border = true) => (
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "baseline", gap: 10, padding: "7px 0", borderTop: border ? (hero ? "1px dotted rgba(255,255,255,0.24)" : "1px dotted var(--color-border)") : "none" }}>
-        <span style={{ fontSize: "var(--font-caption)", fontWeight: 500, color: hero ? "rgba(255,255,255,0.82)" : "var(--color-primary)", minWidth: 0 }}>{label}</span>
+        <span style={{ fontSize: "var(--font-caption)", fontWeight: 500, color: hero ? "rgba(255,255,255,0.88)" : "var(--color-text)", minWidth: 0 }}>{label}</span>
         <span className="mono nw-card-number" style={{ fontSize: "var(--font-caption)", fontWeight: 400, color, textAlign: "right", overflowWrap: "anywhere" }}>{value}</span>
       </div>
     );
@@ -3747,18 +3838,18 @@ function NetWorthApp({ session, onBack }) {
                       </div>
                       <div style={{ display: "grid", gap: 0, minWidth: 0 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, padding: "7px 0 10px" }}>
-                          <span style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)" }}>Copertura spese</span>
+                          <span style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-text)" }}>Copertura spese</span>
                           <span style={{ flexShrink: 0, textAlign: "right" }}>
                             <span className="mono nw-card-number" style={{ fontSize: "calc(13px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-heading)", whiteSpace: "nowrap" }}>{coverageMonths !== null ? `${coverageMonths.toFixed(1)} mesi` : "—"}</span>
                             {coverageStatus && <span style={{ marginLeft: 7, fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 700, color: coverageStatus.color }}>● {coverageStatus.label}</span>}
                           </span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, padding: "10px 0", borderTop: "1px dotted var(--color-border)" }}>
-                          <span style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)" }}>Entrate medie mensili</span>
+                          <span style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-text)" }}>Entrate medie mensili</span>
                           <span className="mono nw-card-number" style={{ fontSize: "calc(13px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-success)", whiteSpace: "nowrap" }}><Money>{coverageAverageIncome !== null ? fmtEUR(coverageAverageIncome) : "—"}</Money></span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, padding: "10px 0", borderTop: "1px dotted var(--color-border)" }}>
-                          <span style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-primary)" }}>Spesa media mensile</span>
+                          <span style={{ fontSize: "calc(12.5px + var(--mobile-font-boost))", fontWeight: 600, color: "var(--color-text)" }}>Spesa media mensile</span>
                           <span className="mono nw-card-number" style={{ fontSize: "calc(13px + var(--mobile-font-boost))", fontWeight: 700, color: "var(--color-primary)", whiteSpace: "nowrap" }}><Money>{coverageAverageExpense !== null ? fmtEUR(coverageAverageExpense) : "—"}</Money></span>
                         </div>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 14, padding: "10px 0", borderTop: "1px dotted var(--color-border)" }}>
@@ -3802,10 +3893,10 @@ function StatsSection({ items,getName,getIcon,buildMapAsOf,getTotalsFromMap,hist
  const StatRows=({rows})=><div style={{display:"flex",flexDirection:"column",gap:0}}>{rows.map(([l,v,signal],i,arr)=><div key={l} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",gap:12,padding:"10px 4px",borderBottom:i<arr.length-1?"1px dotted var(--color-border)":"none"}}><span style={{fontSize: "var(--font-caption)",color:"var(--color-primary)",lineHeight:1.25}}>{l}</span><span className="mono" style={{fontSize: "var(--font-caption)",fontWeight:700,color:signal>0?"var(--color-success)":signal<0?"var(--color-danger)":"var(--color-heading)",textAlign:"right",whiteSpace:"nowrap"}}><Money>{v}</Money></span></div>)}</div>;
  const StatGroup=({title,rows,first=false})=><div style={{marginTop:first?2:18}}><div className="section-label" style={{fontSize: "var(--font-caption)",letterSpacing:"0.1em",margin:"0 4px 5px",color:"var(--color-heading)"}}>{title}</div><StatRows rows={rows}/></div>;
  const Head=({title,open,setOpen})=><div onClick={()=>setOpen(!open)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",marginBottom:open?10:0}}><div style={{width:24}}/><div className="section-label">{title}</div><ChevronDown size={18} color="var(--color-primary)" style={{transform:open?"rotate(180deg)":"none"}}/></div>;
- if(!items.length&&emptyMessage)return <div style={{padding:30,textAlign:"center",color:"var(--color-primary)"}}>{emptyMessage}</div>;
+ if(!items.length&&emptyMessage)return <EmptyState title="Nessun elemento presente" description={emptyMessage} />;
  return <div className="fade-in scrollbar-thin" style={{flex:1,minHeight:0,overflowY:"auto",overflowX:"hidden",padding:"10px 4px"}}><div className="no-scrollbar" style={{display:"flex",justifyContent:"center",gap:4,overflowX:"auto",marginBottom:14}}>{ranges.map(r=><button key={r} onClick={()=>setRange(r)} style={{padding:"6px 11px",borderRadius:20,border:"none",background:range===r?"var(--color-primary)":"var(--color-bg-tint)",color:range===r?"#fff":"var(--color-heading)",fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>{r}</button>)}</div><Head title={chartTitle} open={chartOpen} setOpen={setChartOpen}/>{chartOpen&&<><div style={{background:"var(--color-bg-tint)",borderRadius:"var(--radius-xl)",padding:"18px 16px"}}><div style={{textAlign:"center"}}><div className="mono" style={{fontSize: "calc(30px + var(--mobile-font-boost))",fontWeight:700}}><Money>{fmtEUR(grand)}</Money></div><div className="mono" style={{fontSize: "calc(13px + var(--mobile-font-boost))",color:gain>=0?"var(--color-success)":"var(--color-danger)"}}><Money>{gain>0?"+":""}{fmtEUR(gain)}</Money>{cost>0?` (${fmtPct(gain/cost*100)})`:""}</div></div><CapitalChart months={series.months} market={series.market} cost={series.cost} futureFromMonth={null}/></div></>}
  <section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title="Andamento percentuale" open={perfOpen} setOpen={setPerfOpen}/>{perfOpen&&<div style={{background:"var(--color-bg-tint)",borderRadius:"var(--radius-xl)",padding:"14px 12px"}}><PerformanceChart months={series.months} {...perf}/></div>}</section>
- <section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title={compositionTitle} open={compOpen} setOpen={setCompOpen}/>{compOpen&&<><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}><PortfolioPieChart rows={rows} activeId={activeId} setActiveId={setActiveId}/><div style={{flex:"1 1 180px"}}>{rows.map((r,i)=><div key={r.id} onClick={()=>setActiveId(activeId===r.id?null:r.id)} style={{display:"grid",gridTemplateColumns:"12px minmax(0,1fr) auto",gap:8,alignItems:"center",padding:"8px",borderRadius:9,background:activeId===r.id?"var(--color-bg-tint)":"transparent",opacity:activeId&&activeId!==r.id?.35:1,cursor:"pointer"}}><i style={{width:10,height:10,borderRadius:"50%",background:PIE_COLORS[i%PIE_COLORS.length]}}/><span style={{overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.name}</span><span className="mono" style={{fontSize: "var(--font-caption)",textAlign:"right",fontWeight:700}}>{r.pct.toFixed(0)}%<br/><Money>{fmtEUR(r.value)}</Money></span></div>)}</div></div>{rows[0]&&<div style={{marginTop:14,padding:"12px 14px",borderRadius:12,background:"var(--color-bg-tint)",display:"flex",justifyContent:"space-between"}}><span><small style={{color:"var(--color-primary)"}}>{biggestLabel}</small><br/><b>{rows[0].name}</b></span><span className="mono" style={{textAlign:"right"}}><Money>{fmtEUR(rows[0].value)}</Money><br/><small>{rows[0].pct.toFixed(0)}% del totale</small></span></div>}</>}</section>
+ <section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title={compositionTitle} open={compOpen} setOpen={setCompOpen}/>{compOpen&&<><div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:16,flexWrap:"wrap"}}><PortfolioPieChart rows={rows} activeId={activeId} setActiveId={setActiveId}/><div className="chart-legend-list">{rows.map((r,i)=><div key={r.id} onClick={()=>setActiveId(activeId===r.id?null:r.id)} className="chart-legend-item" style={{background:activeId===r.id?"var(--color-bg-tint)":"transparent",opacity:activeId&&activeId!==r.id?.35:1}} title={`${r.name}: ${fmtEUR(r.value)} · ${r.pct.toFixed(1)}%`}><i style={{width:10,height:10,borderRadius:"50%",background:PIE_COLORS[i%PIE_COLORS.length]}}/><span className="chart-legend-name">{r.name}</span><span className="mono chart-legend-value">{r.pct.toFixed(0)}%<br/><Money>{fmtEUR(r.value)}</Money></span></div>)}</div></div>{rows[0]&&<div style={{marginTop:14,padding:"12px 14px",borderRadius:12,background:"var(--color-bg-tint)",display:"flex",justifyContent:"space-between"}}><span><small style={{color:"var(--color-primary)"}}>{biggestLabel}</small><br/><b>{rows[0].name}</b></span><span className="mono" style={{textAlign:"right"}}><Money>{fmtEUR(rows[0].value)}</Money><br/><small>{rows[0].pct.toFixed(0)}% del totale</small></span></div>}</>}</section>
  {metrics&&<section style={{marginTop:20,borderTop:"1px solid var(--color-border)",paddingTop:16}}><Head title="Statistiche" open={statsOpen} setOpen={setStatsOpen}/>{statsOpen&&<div>
  <StatGroup first title={statsTitles.total} rows={[["Rendimento totale",`${gain>0?"+":""}${fmtEUR(gain)}`,gain],["Rendimento totale %",cost>0?fmtPct(gain/cost*100):"—",cost>0?gain/cost*100:null]]}/>
  <StatGroup title="DATI DEL PERIODO" rows={[["Contributi nel periodo",`${metrics.contrib>0?"+":""}${fmtEUR(metrics.contrib)}`,metrics.contrib],["Rendimento del periodo",`${metrics.gain>0?"+":""}${fmtEUR(metrics.gain)}`,metrics.gain],["Rendimento % del periodo",metrics.ret===null?"—":fmtPct(metrics.ret),metrics.ret]]}/>
@@ -3852,10 +3943,12 @@ function ModalActions({ children, spaced = false }) {
   return <div className={`modal-actions${spaced ? " modal-actions-spaced" : ""}`}>{children}</div>;
 }
 function AppModal({ onClose, children, overlayStyle, panelStyle, scrollable = false }) {
+  const keyboardOffset = useKeyboardOffset();
+  const mergedPanelStyle = { "--modal-keyboard-offset": `${keyboardOffset}px`, ...panelStyle };
   return (
     <>
       <div onClick={onClose} className="modal-overlay app-modal-overlay" style={overlayStyle} />
-      <div role="dialog" aria-modal="true" className={`fade-in${scrollable ? " scrollbar-thin" : ""} modal-panel app-modal-panel`} style={panelStyle}>
+      <div role="dialog" aria-modal="true" className={`fade-in${scrollable ? " scrollbar-thin" : ""} modal-panel app-modal-panel`} style={mergedPanelStyle}>
         {children}
       </div>
     </>
@@ -4472,7 +4565,7 @@ function InvestApp({ session, onBack }) {
 
               <div className="section-label" style={{ marginBottom: 8 }}>Storico valori</div>
               {holdingValuations.length === 0 ? (
-                <div style={{ fontSize: "calc(13px + var(--mobile-font-boost))", color: "var(--color-border-light)", padding: "6px 4px" }}>Nessun valore ancora registrato.</div>
+                <EmptyState title="Nessun valore registrato" description="Aggiungi una valutazione per iniziare a costruire lo storico." />
               ) : holdingValuations.map((v) => {
                 const gain = v.market_value - v.cost_basis;
                 const isEditing = editingValId === v.id;
@@ -4983,7 +5076,7 @@ function InsuranceApp({ session, onBack }) {
 
               <div className="section-label" style={{ marginBottom: 8 }}>Storico valori</div>
               {policyValuations.length === 0 ? (
-                <div style={{ fontSize: "calc(13px + var(--mobile-font-boost))", color: "var(--color-border-light)", padding: "6px 4px" }}>Nessun valore ancora registrato.</div>
+                <EmptyState title="Nessun valore registrato" description="Aggiungi una valutazione per iniziare a costruire lo storico." />
               ) : policyValuations.map((v) => {
                 const gain = v.market_value - v.cost_basis;
                 const isEditing = editingValId === v.id;
@@ -5444,7 +5537,7 @@ function RealEstateApp({ session, onBack }) {
 
               <div className="section-label" style={{ marginBottom: 8 }}>Storico valori</div>
               {propertyValuations.length === 0 ? (
-                <div style={{ fontSize: "calc(13px + var(--mobile-font-boost))", color: "var(--color-border-light)", padding: "6px 4px" }}>Nessun valore ancora registrato.</div>
+                <EmptyState title="Nessun valore registrato" description="Aggiungi una valutazione per iniziare a costruire lo storico." />
               ) : propertyValuations.map((v) => {
                 const gain = v.market_value - v.cost_basis;
                 const isEditing = editingValId === v.id;
@@ -6611,7 +6704,7 @@ function CashflowApp({ session, onBack }) {
             {rowError && <FormMessage>{rowError}</FormMessage>}
             <ModalActions>
               <button onClick={() => setEditingMonthKey(null)} className="btn-outline" style={{ flex: 1, padding: "10px 0", borderRadius: "var(--radius-sm)", fontSize: "calc(14px + var(--mobile-font-boost))" }}>Annulla</button>
-              <button onClick={saveRow} disabled={rowBusy} className="text-sm" style={{ flex: 1, padding: "10px 0", borderRadius: "var(--radius-sm)", border: "none", background: rowBusy ? "var(--color-border-light)" : "var(--color-heading)", color: "#FFFFFF", cursor: rowBusy ? "default" : "pointer" }}>{cfCarryForward ? "Porta avanti" : "Salva"}</button>
+              <button onClick={saveRow} disabled={rowBusy} aria-busy={rowBusy ? "true" : "false"} className="btn-primary" style={{ flex: 1 }}>{cfCarryForward ? "Porta avanti" : "Salva"}</button>
             </ModalActions>
 
             {entriesMap[editingMonthKey] && (
@@ -6664,7 +6757,7 @@ function CashflowApp({ session, onBack }) {
       {transferModalOpen === "list" && (
         <AppModal onClose={() => setTransferModalOpen(false)} overlayStyle={{zIndex:47}} panelStyle={{zIndex:48,maxHeight:"78dvh",overflowY:"auto"}}>
           <div className="text-md" style={{marginBottom:12}}>Trasferimenti</div>
-          {transfers.length===0 ? <div style={{color:"var(--color-text-secondary)",fontSize:"calc(13px + var(--mobile-font-boost))"}}>Nessun trasferimento registrato.</div> : transfers.map((t)=><div key={t.id} style={{padding:"11px 0",borderBottom:"1px solid var(--color-border)",display:"flex",gap:10,alignItems:"center"}}><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700}}>{accountName(t.from_account_id)} → {accountName(t.to_account_id)}</div><div style={{fontSize:"calc(12px + var(--mobile-font-boost))",color:"var(--color-text-secondary)"}}>{t.transfer_date}{t.note?` · ${t.note}`:""}</div></div><div className="mono" style={{fontWeight:800}}><Money>{fmtEUR(t.amount)}</Money></div><button onClick={()=>editTransfer(t)} className="btn-icon"><Pencil size={15}/></button><button onClick={()=>setRemovalTransfer(t)} className="btn-icon" style={{color:"var(--color-danger)"}}><Trash2 size={15}/></button></div>)}
+          {transfers.length===0 ? <EmptyState title="Nessun trasferimento" description="I trasferimenti tra conti compariranno qui." /> : transfers.map((t)=><div key={t.id} style={{padding:"11px 0",borderBottom:"1px solid var(--color-border)",display:"flex",gap:10,alignItems:"center"}}><div style={{flex:1,minWidth:0}}><div style={{fontWeight:700}}>{accountName(t.from_account_id)} → {accountName(t.to_account_id)}</div><div style={{fontSize:"calc(12px + var(--mobile-font-boost))",color:"var(--color-text-secondary)"}}>{t.transfer_date}{t.note?` · ${t.note}`:""}</div></div><div className="mono" style={{fontWeight:800}}><Money>{fmtEUR(t.amount)}</Money></div><button onClick={()=>editTransfer(t)} className="btn-icon"><Pencil size={15}/></button><button onClick={()=>setRemovalTransfer(t)} className="btn-icon" style={{color:"var(--color-danger)"}}><Trash2 size={15}/></button></div>)}
         </AppModal>
       )}
       {removalTransfer && (
